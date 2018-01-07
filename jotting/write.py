@@ -9,12 +9,13 @@ from uuid import uuid1
 from weakref import WeakKeyDictionary
 
 from .utils import CallMap, infer_title
+from .read import Stream
 
 
 class book:
 
     _try_ = False
-    _file_ = sys.stdout
+    _writer_ = Stream()
     _shelves = WeakKeyDictionary()
 
     @classmethod
@@ -79,11 +80,10 @@ class book:
     def _publisher_(self, content):
         metadata = self._binding.copy()
         metadata["timestamp"] = time.time()
-        self._writer_({"metadata": metadata, "content": content})
-
-    def _writer_(self, content):
-        message = self._serializer_(content)
-        self._file_.write(message + "\n")
+        message = self._serializer_({
+            "metadata": metadata,
+            "content": content})
+        self._writer_(message)
 
     def _serializer_(self, message):
         try:
@@ -104,7 +104,10 @@ class book:
 
     @classmethod
     def _current(cls):
-        return cls._shelf()[-1]
+        shelf = cls._shelf()
+        if len(shelf) == 1:
+            raise ValueError("No books are open.")
+        return shelf[-1]
 
     @classmethod
     def _shelf(cls):

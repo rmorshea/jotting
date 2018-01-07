@@ -3,30 +3,48 @@ import json
 import datetime
 
 
-def tree(content, metadata, depth):
-    if metadata["status"] in ("success", "failure"):
+class Tree(object):
+
+    def __init__(self, write=sys.stdout.write):
+        self._write = write
+
+    def __call__(self, content, metadata, depth):
+        method = getattr(self, metadata['status'])
+        lines = list(method(content, metadata, depth))
+        self._write("\n" + "\n".join(lines))
+
+    def started(self, content, metadata, depth):
+        indent = "|   " * depth
+        yield indent + "|-- {status}: {title}".format(**metadata)
+        yield indent + "|   @ {0}".format(datetime.datetime.fromtimestamp(metadata["timestamp"]))
+        for k, v in content.items():
+            yield indent + "|   | {0}: {1}".format(k, v)
+
+    def working(self, content, metadata, depth):
         indent = "|   " * (depth + 1)
-        lines = ["`-- {status}: {title}".format(**metadata),
-            "    @ {0}".format(datetime.datetime.fromtimestamp(metadata["timestamp"]))]
+        yield indent + "|-- {status}: {title}".format(**metadata)
+        yield indent + "|   @ {0}".format(datetime.datetime.fromtimestamp(metadata["timestamp"]))
         for k, v in content.items():
-            lines.append("    | {0}: {1}".format(k, v))
-    else:
-        if metadata["status"] == "working":
-            indent = "|   " * (depth + 1)
-        else:
-            indent = "|   " * depth
-        lines = ["|-- {status}: {title}".format(**metadata),
-            "|   @ {0}".format(datetime.datetime.fromtimestamp(metadata["timestamp"]))]
+            yield indent + "|   | {0}: {1}".format(k, v)
+
+    def success(self, content, metadata, depth):
+        indent = "|   " * (depth + 1)
+        yield indent + "`-- {status}: {title}".format(**metadata)
+        yield indent + "    @ {0}".format(datetime.datetime.fromtimestamp(metadata["timestamp"]))
         for k, v in content.items():
-            lines.append("|   | {0}: {1}".format(k, v))
-    for i in range(len(lines)):
-        lines.insert(2 * i, "\n" + indent)
-    sys.stdout.write("".join(lines))
+            yield indent + "    | {0}: {1}".format(k, v)
+
+    def failure(self, content, metadata, depth):
+        indent = "|   " * (depth + 1)
+        yield indent + "`-- {status}: {title}".format(**metadata)
+        yield indent + "    @ {0}".format(datetime.datetime.fromtimestamp(metadata["timestamp"]))
+        for k, v in content.items():
+            yield indent + "    | {0}: {1}".format(k, v)
 
 
-class stream:
+class Stream:
 
-    def __init__(self, outlet=tree):
+    def __init__(self, outlet=Tree()):
         self._logs = {} # series of log queues per tag
         self._tree = {None: []} # the tag paths to each log
         self._sending = None
