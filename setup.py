@@ -28,17 +28,21 @@ packages = find_packages(project)
 
 here = path.abspath(path.dirname(__file__))
 root = path.join(here, project)
+reqs = path.join(here, "requirements.txt")
 
 #-----------------------------------------------------------------------------
 # Requirements
 #-----------------------------------------------------------------------------
 
-with open(path.join(here, "requirements.txt"), "r") as r:
-    requirements = [
-        "pip install %s" % line for
-        line in r.read().split("\n")
-        if not line.startswith("#")
-    ]
+if os.path.exists(reqs):
+    with open(reqs, "r") as r:
+        requirements = [
+            "pip install %s" % line for
+            line in r.read().split("\n")
+            if not line.startswith("#")
+        ]
+else:
+    requirements = []
 
 #-----------------------------------------------------------------------------
 # Finalize Parameters
@@ -46,7 +50,7 @@ with open(path.join(here, "requirements.txt"), "r") as r:
 
 parameters = dict(
     name=project,
-    version=email,
+    version=version,
     author=author,
     author_email=email,
     description=summary,
