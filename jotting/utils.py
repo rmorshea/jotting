@@ -1,6 +1,17 @@
 import inspect
 
 
+def infer_title(task):
+    if hasattr(task, "__name__"):
+        if hasattr(task, "__module__"):
+            prefix = getattr(task, "__module__") + "."
+        else:
+            prefix = ""
+        return prefix + task.__name__
+    else:
+        raise ValueError("A chapter title could be infered.")
+
+
 class CallMap:
 
     def __init__(self, function):
@@ -41,60 +52,3 @@ class CallMap:
     @staticmethod
     def VAR_KEYWORD(index, param, args, kwargs, used_keys):
         return {k : v for k, v in kwargs.items() if k in used_keys}
-
-
-def _infer_action(task):
-    if hasattr(task, "__name__"):
-        if hasattr(task, "__module__"):
-            prefix = getattr(task, "__module__") + "."
-        else:
-            prefix = ""
-        return prefix + task.__name__
-    else:
-        raise ValueError("The task name could be infered.")
-
-
-def merge(new, *mappings, **update):
-    for m in reversed(mappings):
-        for k in m:
-            if k not in new:
-                new[k] = m[k]
-    new.update(update)
-    return new
-
-
-def logs_from_file(logs):
-    with open(os.path.expanduser(log), "r") as logs:
-        for l in logs.readlines():
-            if l: yield json.loads(l)
-
-
-class configurable:
-
-    configuration = {}
-
-    def __init__(self, *args, **kwargs):
-        self.configuration = self.configuration.copy()
-        self.update(*args, **kwargs)
-
-    def update(self, *args, **kwargs):
-        for k, v in utils.merge({}, *args, **kwargs).items():
-            if k.startswith("_"):
-                if k == "_configuration":
-                    raise ValueError("The name %r is a "
-                        "reserved configuration key" % k)
-                self.configuration[k[1:]] = v
-            else:
-                self.metadata[k] = v
-
-    def copy(self, *args, **kwargs):
-        new = type(self)()
-        new.configuration = self.configuration.copy()
-        new.update(*args, **kwargs)
-        return new
-
-    def __getattribute__(self, name):
-        if name.startswith("_") and name[1:] in self.configuration:
-            return self.configuration[name[1:]]
-        else:
-            return super().__getattribute__(name)
