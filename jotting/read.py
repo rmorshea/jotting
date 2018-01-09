@@ -5,13 +5,14 @@ import datetime
 
 class Tree(object):
 
-    def __init__(self, write=sys.stdout.write):
-        self._write = write
+    def __init__(self, writer=sys.stdout.write):
+        self._writer = writer
 
-    def __call__(self, content, metadata, depth):
+    def __call__(self, log, depth):
+        content, metadata = log["content"], log["metadata"]
         method = getattr(self, metadata['status'])
         lines = list(method(content, metadata, depth))
-        self._write("\n" + "\n".join(lines))
+        self._writer("\n".join(lines) + "\n")
 
     def started(self, content, metadata, depth):
         indent = "|   " * depth
@@ -89,8 +90,8 @@ class Stream:
         for i, t in enumerate(self._tree[tag]):
             queue = self._logs[t]
             for _ in range(len(queue)):
-                self._pre_outlet(queue.pop(0), i)
-        self._pre_outlet(log, i)
+                self._outlet(queue.pop(0), i)
+        self._outlet(log, i)
         if log["metadata"]["parent"] is None:
             self._sending = None
             if self._pending:
@@ -99,6 +100,3 @@ class Stream:
             self._sending = self._tree[tag][0]
         del self._logs[tag]
         del self._tree[tag]
-
-    def _pre_outlet(self, log, depth):
-        self._outlet(log["content"], log["metadata"], depth)

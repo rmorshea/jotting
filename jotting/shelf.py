@@ -14,7 +14,7 @@ from .read import Stream
 
 class book:
 
-    _try_ = False
+    _allow_ = False
     _writer_ = Stream()
     _shelves = WeakKeyDictionary()
 
@@ -47,8 +47,8 @@ class book:
         return self
 
     def __exit__(self, *exc):
-        trial = Exception if self._try_ is True else self._try_
-        not_raises = issubclass(exc[0], trial) if self._try_ else trial
+        trial = Exception if self._allow_ is True else self._allow_
+        not_raises = issubclass(exc[0], trial) if self._allow_ else trial
         if exc[0] is not None:
             self.update(status="failure")
             self._publisher_({exc[0].__name__: str(exc[1])})
@@ -83,13 +83,15 @@ class book:
         message = self._serializer_({
             "metadata": metadata,
             "content": content})
-        self._writer_(message)
+        self._writer_(message + "\n")
 
     def _serializer_(self, message):
         try:
             return json.dumps(message)
         except:
-            return str(message)
+            content = {k: str(v) for k, v in message["content"].items()}
+            message["content"] = content
+            return json.dumps(message)
 
     @classmethod
     def current(self):
