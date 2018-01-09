@@ -215,7 +215,7 @@ Which end up looking like this:
 {"metadata": {"title": "__main__.get_url", "tag": "1e581186-f513-11e7-8507-c82a142de70e", "status": "success", "parent": null, "timestamp": 1515484812.836246}, "content": {"returned": "<Response [200]>"}}
 ```
 
-#### Writing Implements
+## Writing Implements
 
 Comprehensive writing tools (e.g. a threaded file writer) are [not implemented yet](https://github.com/rmorshea/jotting/issues/2), and may take influence from [`eliot`](https://github.com/ScatterHQ/eliot/blob/e5bf9ef81ecef474803786575e9dafa6b40a4d65/eliot/logwriter.py). For now, one can write to file simply by providing a function to `book(writer=my_function)`:
 
