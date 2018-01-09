@@ -22,7 +22,7 @@ $ pip install requests
 
 ## Bookmaking
 
-We'll start with a function that uses `requests`to return a response from a url:
+We'll start with a function that uses `requests` to return a response from a url:
 
 ```python
 import requests
