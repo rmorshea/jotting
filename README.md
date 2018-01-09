@@ -6,7 +6,7 @@ Logs that explain when, where, and why things happen.
 
 `jotting` is a log system for Python 3 ([maybe 2](https://github.com/rmorshea/jotting/issues/1)) that can be used to record the causal history of an asynchronous or distributed system. These histories are composed of actions which, once "started", will begin "working", potentially spawn other actions, and eventually end as a "success" or "failure". In the end you're left with a breadcrumb trail of information that you can use to squash bugs with minimal boilerplate.
 
-## Quickstart
+# Quickstart
 
 Install `jotting` with `pip`:
 
@@ -20,7 +20,7 @@ Then `requests` to follow the examples:
 $ pip install requests
 ```
 
-### Bookmaking
+## Bookmaking
 
 We'll start with a function that uses `requests`to return a response from a url:
 
@@ -65,7 +65,7 @@ Once we've done this we'll immediately begin to see printed log statements:
 |       | returned: <Response [200]>
 ```
 
-### Writing On The Job
+## Writing On The Job
 
 But if we need more information than we get from `book.mark` we can use `book.write` too:
 
@@ -99,7 +99,7 @@ And now we get an extra log telling us what's going on inside `get_url`:
 |       | returned: <Response [200]>
 ```
 
-### Putting Things In Context
+## Putting Things In Context
 
 But wait! We have larger functions that have subtasks we'd like to monitor:
 
@@ -164,7 +164,7 @@ We can get just the kind of fine grained logs we need:
 |       | ValueError: bad-url
 ```
 
-### Book Keeping Basics
+# Bookkeeping
 
 Under the hood, `jotting` creates json encoded messages that contain the information required to recontruct a history of actions. By default `jotting` uses a `Stream` to order potentially asynchronously logged events before sending them to a `Tree` to by cleanly formatted:
 
