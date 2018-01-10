@@ -3,7 +3,7 @@ import json
 import datetime
 
 
-class Format:
+class Style:
 
     def __init__(self, writer=sys.stdout.write):
         self._writer = writer
@@ -19,7 +19,7 @@ class Format:
         raise NotImlementedError()
 
 
-class Log(Format):
+class Log(Style):
 
     def default(self, content, metadata, depth):
         timestamp = datetime.datetime.fromtimestamp(metadata["timestamp"])
@@ -28,7 +28,7 @@ class Log(Format):
         yield "{0} [{1}] {2} - {3}".format(timestamp, status, title, content)
 
 
-class Tree(Format):
+class Tree(Style):
 
     def started(self, content, metadata, depth):
         indent = "|   " * depth

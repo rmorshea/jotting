@@ -10,7 +10,7 @@ from uuid import uuid1
 from weakref import WeakKeyDictionary
 
 from .utils import CallMap, infer_title
-from .read import Log
+from .style import Log
 
 
 class book(dict):
@@ -29,9 +29,10 @@ class book(dict):
                 raise TypeError("%r is not an editable option." % k[1:-1])
             setattr(cls, k, v)
 
-    def __init__(self, title, parent=None, **content):
+    def __init__(self, title=None, parent=None, **content):
         parent = parent or self.current().get("tag")
         depth = int(parent.split("-")[1]) + 1 if parent else 0
+        title = title or "%s - task" % self.current().get("title")
         super().__init__(
             status="started", parent=parent, title=title,
             tag=uuid1().hex + "-%s" % depth, depth=depth)
@@ -84,7 +85,7 @@ class book(dict):
     def shelf(cls):
         task = asyncio.Task.current_task() or threading.current_thread()
         if task not in cls._shelves:
-            cls._shelves[task] = [{}]
+            cls._shelves[task] = [{"title": "__main__"}]
         return cls._shelves[task]
 
     @classmethod
