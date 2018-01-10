@@ -65,8 +65,6 @@ Once we've done this we'll immediately begin to see printed log statements:
 |       | returned: <Response [200]>
 ```
 
-## Writing On The Job
-
 But if we need more information than we get from `book.mark` we can use `book.write` too:
 
 ```python
@@ -141,7 +139,7 @@ def get_urls(*urls):
 response = get_urls("https://google.com", "not-here")
 ```
 
-We can get just the kind of fine grained logs we need:
+This will produce just the kind of fine grained logs we need:
 
 ```
 |-- started: __main__.get_urls
@@ -166,7 +164,10 @@ We can get just the kind of fine grained logs we need:
 
 # Bookkeeping
 
-Under the hood, `jotting` creates json encoded messages that contain the information required to recontruct a history of actions. By default `jotting` uses a `Stream` to order potentially asynchronously logged events before sending them to a `Tree` to by cleanly formatted:
+Under the hood, `jotting` creates json encoded messages that contain the information
+required to reconstruct a history of actions. By default `jotting` uses a `Stream`
+to order potentially asynchronously logged events before sending them to a `Tree`
+to by cleanly formatted:
 
 ```python
 import sys
@@ -217,18 +218,18 @@ Which end up looking like this:
 
 ## Writing Implements
 
-Comprehensive writing tools (e.g. a threaded file writer) are [not implemented yet](https://github.com/rmorshea/jotting/issues/2), and may take influence from [`eliot`](https://github.com/ScatterHQ/eliot/blob/e5bf9ef81ecef474803786575e9dafa6b40a4d65/eliot/logwriter.py). For now, one can write to file simply by providing a function to `book(writer=my_function)`:
+Knowing that `book` provides an interface to control where logs are written we
+can create our own custom writers. Up till now we've been writing to `sys.stdout`,
+but if we wanted to store things in a file we might do something like this.
 
 ```python
-from jotting import book
+from jotting import book, read
 
-
-def logbox(filename):
-    def writer(message):
-        with open(filename, "a+") as f:
-            f.write(message)
-    return writer
-
-
-book.edit(writer=logbox("path/to/my/file.txt"))
+logbox = write.ToFile("path/to/my/file.txt")
+book.edit(writer=logbox)
 ```
+
+In general though, `jotting` provides a simple threaded `Writer` for logging
+that might require
+
+> In the future these writing tools take more of an influence from [`eliot`](https://github.com/ScatterHQ/eliot/blob/e5bf9ef81ecef474803786575e9dafa6b40a4d65/eliot/logwriter.py)

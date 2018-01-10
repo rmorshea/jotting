@@ -9,7 +9,7 @@ def infer_title(task):
             prefix = ""
         return prefix + task.__name__
     else:
-        raise ValueError("A chapter title could be infered.")
+        raise ValueError("The title of %r could be infered." % task)
 
 
 class CallMap:
@@ -43,7 +43,7 @@ class CallMap:
 
     @staticmethod
     def VAR_POSITIONAL(index, param, args, kwargs, used_keys):
-        return args[index + 1:]
+        return list(args[index:])
 
     @staticmethod
     def KEYWORD_ONLY(index, param, args, kwargs, used_keys):

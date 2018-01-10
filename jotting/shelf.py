@@ -1,6 +1,7 @@
 import sys
 import json
 import time
+import types
 import inspect
 import asyncio
 import threading
@@ -9,40 +10,36 @@ from uuid import uuid1
 from weakref import WeakKeyDictionary
 
 from .utils import CallMap, infer_title
-from .read import Stream
+from .read import Log
 
 
-class book:
+class book(dict):
 
     _allow_ = False
-    _writer_ = Stream()
+    _writer_ = Log()
     _shelves = WeakKeyDictionary()
 
     @classmethod
     def edit(cls, **options):
         for k, v in options.items():
+            if k.strip("_") != k:
+                raise TypeError("%r is an invalid option name." % k[1:-1])
             k = "_" + k + "_"
             if not hasattr(cls, k):
                 raise TypeError("%r is not an editable option." % k[1:-1])
             setattr(cls, k, v)
 
-    def __init__(self, title, *binding, **content):
-        self._binding = dict(binding,
-            title=title.format(**content),
-            tag=str(uuid1()), status="started")
-        self._binding.setdefault("parent", self.current())
-        for k in list(self._binding):
-            if k.startswith("_"):
-                v = self._binding.pop(k)
-                k += "_"
-                if not hasattr(self, k):
-                    raise TypeError("%r is not an editable option." % k[1:-1])
-                setattr(self, k, v)
+    def __init__(self, title, parent=None, **content):
+        parent = parent or self.current().get("tag")
+        depth = int(parent.split("-")[1]) + 1 if parent else 0
+        super().__init__(
+            status="started", parent=parent, title=title,
+            tag=uuid1().hex + "-%s" % depth, depth=depth)
         self._publisher_(content)
         self._conclusion = None
 
     def __enter__(self):
-        self._shelf().append(self)
+        self.shelf().append(self)
         self.update(status="working")
         return self
 
@@ -58,61 +55,33 @@ class book:
         else:
             self.update(status="success")
             self._publisher_({})
-        self._shelf().pop()
+        self.shelf().pop()
         return not_raises
+
+    def resume(self, tag):
+        return self.bind(parent=tag)
 
     @classmethod
     def write(cls, *args, **kwargs):
         content = dict(*args, **kwargs)
-        cls._current()._publisher_(content)
+        cls.current()._publisher_(content)
 
     @classmethod
     def close(cls, *args, **kwargs):
         content = dict(*args, **kwargs)
-        cls._current()._conclusion = content
-
-    def get(self, key):
-        return self._binding.get(key)
-
-    def update(self, *args, **kwargs):
-        self._binding.update(*args, **kwargs)
+        cls.current()._conclusion = content
 
     def _publisher_(self, content):
-        metadata = self._binding.copy()
+        metadata = self.copy()
         metadata["timestamp"] = time.time()
-        message = self._serializer_({
-            "metadata": metadata,
-            "content": content})
-        self._writer_(message + "\n")
-
-    def _serializer_(self, message):
-        try:
-            return json.dumps(message)
-        except:
-            content = {k: str(v) for k, v in message["content"].items()}
-            message["content"] = content
-            return json.dumps(message)
+        self._writer_({"metadata": metadata, "content": content})
 
     @classmethod
-    def current(self):
-        return self.shelf(-1)
+    def current(cls):
+        return cls.shelf()[-1]
 
     @classmethod
-    def shelf(cls, index=None):
-        if index is not None:
-            return cls._shelf()[-1].get("tag")
-        else:
-            return [s.get("tag") for s in cls._shelf()]
-
-    @classmethod
-    def _current(cls):
-        shelf = cls._shelf()
-        if len(shelf) == 1:
-            raise ValueError("No books are open.")
-        return shelf[-1]
-
-    @classmethod
-    def _shelf(cls):
+    def shelf(cls):
         task = asyncio.Task.current_task() or threading.current_thread()
         if task not in cls._shelves:
             cls._shelves[task] = [{}]

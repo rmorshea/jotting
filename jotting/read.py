@@ -3,16 +3,32 @@ import json
 import datetime
 
 
-class Tree(object):
+class Format:
 
     def __init__(self, writer=sys.stdout.write):
         self._writer = writer
 
-    def __call__(self, log, depth):
+    def __call__(self, log):
         content, metadata = log["content"], log["metadata"]
-        method = getattr(self, metadata['status'])
-        lines = list(method(content, metadata, depth))
+        method = getattr(self, metadata['status'], self.default)
+        lines = method(content, metadata, metadata["depth"])
+        lines = [lines] if isinstance(lines, str) else lines
         self._writer("\n".join(lines) + "\n")
+
+    def default(self, content, metadata, depth):
+        raise NotImlementedError()
+
+
+class Log(Format):
+
+    def default(self, content, metadata, depth):
+        timestamp = datetime.datetime.fromtimestamp(metadata["timestamp"])
+        status, title = metadata["status"], metadata["title"]
+        content = ", ".join("%s: %s" % (k, v) for k, v in content.items())
+        yield "{0} [{1}] {2} - {3}".format(timestamp, status, title, content)
+
+
+class Tree(Format):
 
     def started(self, content, metadata, depth):
         indent = "|   " * depth
@@ -45,9 +61,9 @@ class Tree(object):
 
 class Stream:
 
-    def __init__(self, outlet=Tree()):
+    def __init__(self, outlet=Log()):
         self._logs = {} # series of log queues per tag
-        self._tree = {None: []} # the tag paths to each log
+        self._tree = {} # the tag paths to each log
         self._sending = None
         self._pending = []
         self._outlet = outlet
@@ -70,7 +86,8 @@ class Stream:
         tag = metadata["tag"]
         parent = metadata["parent"]
         self._logs[tag] = [log]
-        self._tree[tag] = self._tree[parent] + [tag]
+        tree = self._tree.setdefault(parent, [])
+        self._tree[tag] = tree + [tag]
 
     def _continue(self, log):
         tag = log["metadata"]["tag"]
@@ -87,11 +104,11 @@ class Stream:
 
     def _send(self, log):
         tag = log["metadata"]["tag"]
-        for i, t in enumerate(self._tree[tag]):
+        for t in self._tree[tag]:
             queue = self._logs[t]
             for _ in range(len(queue)):
-                self._outlet(queue.pop(0), i)
-        self._outlet(log, i)
+                self._outlet(queue.pop(0))
+        self._outlet(log)
         if log["metadata"]["parent"] is None:
             self._sending = None
             if self._pending:
