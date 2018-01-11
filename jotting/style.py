@@ -1,58 +1,109 @@
 import sys
+import json
 import datetime
+import inspect
 
 
 class Style:
 
-    def __init__(self, writer=sys.stdout.write):
-        self._writer = writer
+    default = None
 
     def __call__(self, log):
-        content, metadata = log["content"], log["metadata"]
-        method = getattr(self, metadata['status'], self.default)
-        lines = method(content, metadata, metadata["depth"])
-        lines = [lines] if isinstance(lines, str) else lines
-        self._writer("\n".join(lines) + "\n")
+        method = getattr(self, log["metadata"]["status"], self.default)
+        if method is not None:
+            lines = method(log)
+            if lines and isinstance(lines, str):
+                lines = [lines]
+            else:
+                lines = list(lines)
+            if lines:
+                return "\n".join(lines) + "\n"
 
-    def default(self, content, metadata, depth):
-        raise NotImlementedError()
+
+class Raw(Style):
+
+    def default(self, log):
+        try:
+            return json.dumps(log)
+        except:
+            content = {k: str(v) for k, v in log["content"].items()}
+            return json.dumps(dict(log, content=content))
 
 
 class Log(Style):
 
-    def default(self, content, metadata, depth):
-        timestamp = datetime.datetime.fromtimestamp(metadata["timestamp"])
-        status, title = metadata["status"], metadata["title"]
-        content = ", ".join("%s: %s" % (k, v) for k, v in content.items())
-        yield "{0} [{1}] {2} - {3}".format(timestamp, status, title, content)
+    def working(self, log):
+        if log["content"]["reason"] is not None:
+            metadata = log["metadata"]
+            status = metadata["status"]
+            timestamp = datetime.datetime.fromtimestamp(log["timestamp"])
+            info = "mem: %{:.6}, cpu: %{:.6}".format(log["mem"], log["cpu"])
+            yield "{time} [{status}] {reason} - {info}".format(
+                time=timestamp, status=status,
+                reason=log["content"]["reason"], info=info)
+
+    def success(self, log):
+        if log["content"]["reason"] is not None:
+            metadata = log["metadata"]
+            status = metadata["status"]
+            duration = metadata["stop"] - metadata["start"]
+            timestamp = datetime.datetime.fromtimestamp(log["timestamp"])
+            info = "mem: %{:.6}, cpu: %{:.6}".format(log["mem"], log["cpu"])
+            yield "{time} [{status}] {reason} after {duration:.3f} seconds - {info}".format(
+                time=timestamp, status=status, duration=duration,
+                reason=log["content"]["reason"], info=info)
+
+    def failure(self, log):
+        metadata = log["metadata"]
+        status = metadata["status"]
+        duration = metadata["stop"] - metadata["start"]
+        timestamp = datetime.datetime.fromtimestamp(log["timestamp"])
+        info = "mem: %{:.6}, cpu: %{:.6}".format(log["mem"], log["cpu"])
+        yield "{time} [{status}] {reason} after {duration:.3f} seconds - {info}".format(
+            time=timestamp, status=status, duration=duration,
+            reason=log["content"]["reason"], info=info)
 
 
 class Tree(Style):
 
-    def started(self, content, metadata, depth):
-        indent = "|   " * depth
+    def started(self, log):
+        content, metadata = log["content"], log["metadata"]
+        indent = "|   " * metadata["depth"]
+        timestamp = datetime.datetime.fromtimestamp(log["timestamp"])
         yield indent + "|-- {status}: {title}".format(**metadata)
-        yield indent + "|   @ {0}".format(datetime.datetime.fromtimestamp(metadata["timestamp"]))
+        yield indent + "|   @ {0}".format(timestamp)
         for k, v in content.items():
             yield indent + "|   | {0}: {1}".format(k, v)
 
-    def working(self, content, metadata, depth):
-        indent = "|   " * (depth + 1)
+    def working(self, log):
+        content, metadata = log["content"], log["metadata"]
+        indent = "|   " * (metadata["depth"] + 1)
+        timestamp = datetime.datetime.fromtimestamp(log["timestamp"])
         yield indent + "|-- {status}: {title}".format(**metadata)
-        yield indent + "|   @ {0}".format(datetime.datetime.fromtimestamp(metadata["timestamp"]))
+        yield indent + "|   @ {0}".format(timestamp)
         for k, v in content.items():
             yield indent + "|   | {0}: {1}".format(k, v)
 
-    def success(self, content, metadata, depth):
-        indent = "|   " * (depth + 1)
+    def success(self, log):
+        content, metadata = log["content"], log["metadata"]
+        indent = "|   " * (metadata["depth"] + 1)
+        timestamp = datetime.datetime.fromtimestamp(log["timestamp"])
         yield indent + "`-- {status}: {title}".format(**metadata)
-        yield indent + "    @ {0}".format(datetime.datetime.fromtimestamp(metadata["timestamp"]))
+        yield indent + "    @ {0}".format(timestamp)
+        diff = metadata["stop"] - metadata["start"]
+        content["duration"] = "{:.3f}".format(diff) + " seconds"
         for k, v in content.items():
             yield indent + "    | {0}: {1}".format(k, v)
 
-    def failure(self, content, metadata, depth):
-        indent = "|   " * (depth + 1)
+    def failure(self, log):
+        content, metadata = log["content"], log["metadata"]
+        indent = "|   " * (metadata["depth"] + 1)
+        timestamp = datetime.datetime.fromtimestamp(log["timestamp"])
         yield indent + "`-- {status}: {title}".format(**metadata)
-        yield indent + "    @ {0}".format(datetime.datetime.fromtimestamp(metadata["timestamp"]))
+        yield indent + "    @ {0}".format(timestamp)
+        diff = metadata["stop"] - metadata["start"]
+        content["duration"] = "{:.3f}".format(diff) + " seconds"
+        if content["reason"] in content:
+            del content["reason"]
         for k, v in content.items():
             yield indent + "    | {0}: {1}".format(k, v)

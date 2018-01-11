@@ -3,9 +3,6 @@ import json
 from time import time as now
 
 
-class Timeout(Exception): pass
-
-
 class WriterMixin:
 
     def __init__(self, target, inbox, stop):
@@ -16,14 +13,12 @@ class WriterMixin:
                     " queue that implements %r." % attr)
         self.inbox = inbox
         self.daemon = True
-        if target is not None:
-            self._target = target
+        self._target = target
         self._stop = stop
         self.start()
 
     def __call__(self, log):
-        message = self.serialize(log)
-        self.inbox.put(message)
+        self.inbox.put(log)
 
     def deadline(self, timeout):
         start = now()
@@ -37,39 +32,13 @@ class WriterMixin:
 
     def run(self):
         while not self._stop.is_set():
-            message = self.inbox.get()
+            log = self.inbox.get()
             try:
-                self.write(message)
+                self.write(log)
             except:
                 raise
             finally:
                 self.inbox.task_done()
 
-    def serialize(self, log):
-        if isinstance(log, str):
-            return log
-        else:
-            try:
-                return json.dumps(log)
-            except:
-                content = {k: str(v) for k, v in log["content"].items()}
-                log["content"] = content
-                return json.dumps(log)
-
-
-    def write(self, message):
-        if self._target is None:
-            raise NotImlementedError()
-        else:
-            self._target(message)
-
-
-class ToFileMixin:
-
-    def __init__(self, filepath):
-        self.filepath = os.path.realpath(os.path.expanduser(filepath))
-        super().__init__()
-
-    def write(self, message):
-        with open(self.filepath, "a+") as f:
-            f.write(message)
+    def write(self, log):
+        self._target(log)

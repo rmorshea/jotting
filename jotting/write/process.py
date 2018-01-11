@@ -1,11 +1,9 @@
-from .mixin import WriterMixin, ToFileMixin
-from multiprocessing import Process, JoinableQueue, Event
+from .mixin import WriterMixin
+from multiprocessing import (
+    Process, JoinableQueue as ProcessQueue, Event as ProcessEvent)
 
 
 class Writer(WriterMixin, Process):
 
     def __init__(self, target=None):
-        super().__init__(target, JoinableQueue(), Event())
-
-
-class ToFile(ToFileMixin, Writer): pass
+        super().__init__(target, ProcessQueue(), ProcessEvent())

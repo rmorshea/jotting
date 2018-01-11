@@ -1,7 +1,9 @@
+import os
 import sys
 import json
 import time
 import types
+import psutil
 import inspect
 import asyncio
 import threading
@@ -10,11 +12,11 @@ from uuid import uuid1
 from weakref import WeakKeyDictionary
 
 from .utils import CallMap, infer_title
-from .style import Log
+from .style import Tree
 
 
 class book(dict):
-    _writer_ = Log()
+
     _shelves = WeakKeyDictionary()
 
     @classmethod
@@ -32,10 +34,11 @@ class book(dict):
         depth = int(parent.split("-")[1]) + 1 if parent else 0
         title = title or "%s - task" % self.current().get("title")
         super().__init__(
-            status="started", parent=parent, title=title,
-            tag=uuid1().hex + "-%s" % depth, depth=depth)
-        self._publisher_(content)
-        self._conclusion = None
+            tag=uuid1().hex + "-%s" % depth,
+            depth=depth, start=time.time(),
+            status="started", parent=parent, title=title)
+        self._write(content)
+        self._conclusion = {}
 
     def __enter__(self):
         self.shelf().append(self)
@@ -43,15 +46,15 @@ class book(dict):
         return self
 
     def __exit__(self, *exc):
+        self["stop"] = time.time()
         if exc[0] is not None:
+            etype = exc[0].__name__
             self.update(status="failure")
-            self._publisher_({exc[0].__name__: str(exc[1])})
-        elif self._conclusion is not None:
-            self.update(status="success")
-            self._publisher_(self._conclusion)
+            self._conclusion[etype] = str(exc[1])
+            self._conclusion.setdefault("reason", etype)
         else:
             self.update(status="success")
-            self._publisher_({})
+        self._write(self._conclusion)
         self.shelf().pop()
         return False
 
@@ -61,17 +64,25 @@ class book(dict):
     @classmethod
     def write(cls, *args, **kwargs):
         content = dict(*args, **kwargs)
-        cls.current()._publisher_(content)
+        cls.current()._write(content)
 
     @classmethod
     def close(cls, *args, **kwargs):
         content = dict(*args, **kwargs)
-        cls.current()._conclusion = content
+        cls.current()._conclusion.update(content)
 
-    def _publisher_(self, content):
-        metadata = self.copy()
-        metadata["timestamp"] = time.time()
-        self._writer_({"metadata": metadata, "content": content})
+    def _write(self, content):
+        process = psutil.Process(os.getpid())
+        content.setdefault("reason", None)
+        self._writer_({
+            "metadata": self.copy(),
+            "content": content,
+            "timestamp": time.time(),
+            "mem": process.memory_percent(),
+            "cpu": process.cpu_percent()})
+
+    def _writer_(self, log, style=Tree()):
+        sys.stdout.write(style(log))
 
     @classmethod
     def current(cls):
