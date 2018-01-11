@@ -11,7 +11,7 @@ from setuptools import find_packages
 #-----------------------------------------------------------------------------
 
 project = "jotting"
-version = "0.0.3"
+version = "0.0.4"
 author = "Ryan Morshead"
 email = "ryan.morshead@gmail.com"
 summary = "causally related logging messages"
@@ -41,6 +41,7 @@ parameters = dict(
     author_email=email,
     description=summary,
     packages=find_packages(),
+    install_requries=["psutil"]
 )
 
 #-----------------------------------------------------------------------------
@@ -48,10 +49,4 @@ parameters = dict(
 #-----------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    if os.path.exists(requirements):
-        subprocess.call(
-            "pip install -r %s" % requirements,
-            stdout=sys.stdout,
-            stderr=sys.stderr,
-            shell=True)
     setup(**parameters)
