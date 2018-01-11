@@ -36,7 +36,7 @@ class WriterMixin:
         self._stop.set()
 
     def run(self):
-        while self._stop.is_set():
+        while not self._stop.is_set():
             message = self.inbox.get()
             try:
                 self.write(message)
