@@ -172,10 +172,10 @@ to by cleanly formatted:
 ```python
 import sys
 import requests
-from jotting import book, style
+from jotting import book, style, read
 
 tree = style.Tree(sys.stdout.write)
-stream = style.Stream(tree)
+stream = read.Stream(tree)
 book.edit(writer=stream)
 
 
