@@ -14,8 +14,6 @@ from .style import Log
 
 
 class book(dict):
-
-    _allow_ = False
     _writer_ = Log()
     _shelves = WeakKeyDictionary()
 
@@ -45,8 +43,6 @@ class book(dict):
         return self
 
     def __exit__(self, *exc):
-        trial = Exception if self._allow_ is True else self._allow_
-        not_raises = issubclass(exc[0], trial) if self._allow_ else trial
         if exc[0] is not None:
             self.update(status="failure")
             self._publisher_({exc[0].__name__: str(exc[1])})
@@ -57,7 +53,7 @@ class book(dict):
             self.update(status="success")
             self._publisher_({})
         self.shelf().pop()
-        return not_raises
+        return False
 
     def resume(self, tag):
         return self.bind(parent=tag)
