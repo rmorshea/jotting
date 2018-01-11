@@ -11,7 +11,7 @@ from setuptools import find_packages
 #-----------------------------------------------------------------------------
 
 project = "jotting"
-version = "0.0.2"
+version = "0.0.3"
 author = "Ryan Morshead"
 email = "ryan.morshead@gmail.com"
 summary = "causally related logging messages"
@@ -28,21 +28,7 @@ packages = find_packages(project)
 
 here = path.abspath(path.dirname(__file__))
 root = path.join(here, project)
-reqs = path.join(here, "requirements.txt")
-
-#-----------------------------------------------------------------------------
-# Requirements
-#-----------------------------------------------------------------------------
-
-if os.path.exists(reqs):
-    with open(reqs, "r") as r:
-        requirements = [
-            "pip install %s" % line for
-            line in r.read().split("\n")
-            if not line.startswith("#")
-        ]
-else:
-    requirements = []
+requirements = path.join(here, "requirements.txt")
 
 #-----------------------------------------------------------------------------
 # Finalize Parameters
@@ -62,8 +48,9 @@ parameters = dict(
 #-----------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    for r in requirements:
-        subprocess.call(r,
+    if os.path.exists(requirements):
+        subprocess.call(
+            "pip install -r %s" % requirements,
             stdout=sys.stdout,
             stderr=sys.stderr,
             shell=True)
