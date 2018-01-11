@@ -30,6 +30,7 @@ class WriterMixin:
         while not self.inbox.empty():
             if now() - start > timeout:
                 self.stop()
+                break
 
     def stop(self):
         self._stop.set()
