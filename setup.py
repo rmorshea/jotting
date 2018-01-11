@@ -11,7 +11,7 @@ from setuptools import find_packages
 #-----------------------------------------------------------------------------
 
 project = "jotting"
-version = "0.0.1"
+version = "0.0.2"
 author = "Ryan Morshead"
 email = "ryan.morshead@gmail.com"
 summary = "causally related logging messages"
