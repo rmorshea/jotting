@@ -1,9 +1,14 @@
 import os
 import json
+from time import time as now
 
-class WriterMixin(object):
 
-    def __init__(self, target, inbox):
+class Timeout(Exception): pass
+
+
+class WriterMixin:
+
+    def __init__(self, target, inbox, stop):
         super().__init__()
         for attr in ("join", "get", "put", "task_done"):
             if not hasattr(inbox, attr):
@@ -13,14 +18,24 @@ class WriterMixin(object):
         self.daemon = True
         if target is not None:
             self._target = target
+        self._stop = stop
         self.start()
 
     def __call__(self, log):
         message = self.serialize(log)
         self.inbox.put(message)
 
+    def deadline(self, timeout):
+        start = now()
+        while not self.inbox.empty():
+            if now() - start > timeout:
+                self.stop()
+
+    def stop(self):
+        self._stop.set()
+
     def run(self):
-        while True:
+        while self._stop.is_set():
             message = self.inbox.get()
             try:
                 self.write(message)
@@ -48,7 +63,7 @@ class WriterMixin(object):
             self._target(message)
 
 
-class ToFileMixin(object):
+class ToFileMixin:
 
     def __init__(self, filepath):
         self.filepath = os.path.realpath(os.path.expanduser(filepath))
