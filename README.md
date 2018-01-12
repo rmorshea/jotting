@@ -165,18 +165,15 @@ This will produce just the kind of fine grained logs we need:
 # Bookkeeping
 
 Under the hood, `jotting` creates json encoded messages that contain the information
-required to reconstruct a history of actions. By default `jotting` uses a `Stream`
-to order potentially asynchronously logged events before sending them to a `Tree`
-to by cleanly formatted:
+required to reconstruct a history of actions. If we want to reconfigure where and/or
+how `jotting` logs, we can change the "writer" of `book`.
 
 ```python
-import sys
 import requests
-from jotting import book, style, read
+from jotting import book, dist, style, write
 
-tree = style.Tree(sys.stdout.write)
-stream = read.Stream(tree)
-book.edit(writer=stream)
+to_file = dist.ToFile("~/Desktop/logbox.txt", style=style.Tree())
+book.edit(writer=write.thread.Writer(to_file))
 
 
 @book.mark
@@ -194,7 +191,7 @@ We can view the raw logs by sending them directly to `stdout`:
 ```python
 import sys
 import requests
-from jotting import book, read
+from jotting import book
 
 book.edit(writer=sys.stdout.write)
 
@@ -215,21 +212,3 @@ Which end up looking like this:
 {"metadata": {"title": "__main__.get_url", "tag": "1e581186-f513-11e7-8507-c82a142de70e", "status": "started", "parent": null, "timestamp": 1515484812.1124601}, "content": {"url": "https://google.com"}}
 {"metadata": {"title": "__main__.get_url", "tag": "1e581186-f513-11e7-8507-c82a142de70e", "status": "success", "parent": null, "timestamp": 1515484812.836246}, "content": {"returned": "<Response [200]>"}}
 ```
-
-## Writing Implements
-
-Knowing that `book` provides an interface to control where logs are written we
-can create our own custom writers. Up till now we've been writing to `sys.stdout`,
-but if we wanted to store things in a file we might do something like this.
-
-```python
-from jotting import book, read
-
-logbox = write.ToFile("path/to/my/file.txt")
-book.edit(writer=logbox)
-```
-
-In general though, `jotting` provides a simple threaded `Writer` for logging
-that might require
-
-> In the future these writing tools take more of an influence from [`eliot`](https://github.com/ScatterHQ/eliot/blob/e5bf9ef81ecef474803786575e9dafa6b40a4d65/eliot/logwriter.py)
