@@ -3,10 +3,10 @@ import json
 from time import time as now
 
 
-class WriterMixin:
+class WriterMixin(object):
 
     def __init__(self, target, inbox, stop):
-        super().__init__()
+        super(WriterMixin, self).__init__()
         for attr in ("join", "get", "put", "task_done"):
             if not hasattr(inbox, attr):
                 raise TypeError("Expected some type of joinable"

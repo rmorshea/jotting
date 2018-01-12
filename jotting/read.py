@@ -2,7 +2,7 @@ import json
 from .style import Tree
 
 
-class Stream:
+class Stream(object):
 
     def __init__(self, outlet=Tree()):
         self._logs = {} # series of log queues per tag

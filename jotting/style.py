@@ -4,7 +4,7 @@ import datetime
 import inspect
 
 
-class Style:
+class Style(object):
 
     default = None
 

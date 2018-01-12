@@ -3,7 +3,7 @@ from copy import deepcopy
 from .style import Raw
 
 
-class Distribute:
+class Distribute(object):
 
     def __init__(self, *places):
         self._places = places
@@ -13,12 +13,12 @@ class Distribute:
             p(deepcopy(log))
 
 
-class Place:
+class Place(object):
 
     _style = Raw()
 
     def __new__(cls, handler=None):
-        s = super()
+        s = super(Place, cls)
         def init(*args, **kwargs):
             self = s.__new__(cls)
             self.__init__(handler, *args, **kwargs)

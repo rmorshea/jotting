@@ -1,4 +1,14 @@
-import inspect
+import sys
+if sys.version_info > (3, 3):
+    from inspect import signature
+
+    def pkind(p):
+        return p.kind.name
+else:
+    from funcsigs import signature
+
+    def pkind(p):
+        return p.kind._name
 
 
 def infer_title(task):
@@ -12,18 +22,18 @@ def infer_title(task):
         raise ValueError("The title of %r could be infered." % task)
 
 
-class CallMap:
+class CallMap(object):
 
     def __init__(self, function):
-        self.parameters = dict(inspect.signature(function).parameters)
+        self.parameters = dict(signature(function).parameters)
 
     def map(self, args, kwargs):
         mapping, used = {}, []
         for i, name in enumerate(self.parameters):
             param = self.parameters[name]
-            handler = getattr(self, param.kind.name)
+            handler = getattr(self, pkind(param))
             value = handler(i, param, args, kwargs, used)
-            if value is not inspect._empty:
+            if value is not param.empty:
                 mapping[param.name] = value
         return mapping
 

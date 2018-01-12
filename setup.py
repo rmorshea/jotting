@@ -28,11 +28,15 @@ packages = find_packages(project)
 
 here = path.abspath(path.dirname(__file__))
 root = path.join(here, project)
-requirements = path.join(here, "requirements.txt")
 
 #-----------------------------------------------------------------------------
 # Finalize Parameters
 #-----------------------------------------------------------------------------
+
+if sys.version_info >= (3, 5):
+    requires = ["psutil"]
+else:
+    requires = ["psutil", "funcsigs"]
 
 parameters = dict(
     name=project,
@@ -41,7 +45,8 @@ parameters = dict(
     author_email=email,
     description=summary,
     packages=find_packages(),
-    install_requries=["psutil"]
+    python_requires = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*",
+    install_requries=requires,
 )
 
 #-----------------------------------------------------------------------------

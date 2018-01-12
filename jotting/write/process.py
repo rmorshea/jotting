@@ -6,4 +6,4 @@ from multiprocessing import (
 class Writer(WriterMixin, Process):
 
     def __init__(self, target=None):
-        super().__init__(target, ProcessQueue(), ProcessEvent())
+        super(Writer, self).__init__(target, ProcessQueue(), ProcessEvent())
