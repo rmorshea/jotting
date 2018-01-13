@@ -2,6 +2,7 @@ import sys
 import json
 import datetime
 import inspect
+from copy import deepcopy
 
 from .utils import infer_title
 
@@ -11,6 +12,7 @@ class Style(object):
     default = None
 
     def __call__(self, log):
+        log = deepcopy(log)
         method = getattr(self, log["metadata"]["status"], self.default)
         if method is not None:
             log = self._pre(log)
