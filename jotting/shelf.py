@@ -30,10 +30,9 @@ class book(dict, _book_compat):
         for o in outlets:
             cls._distributor.add_outlet(o)
 
-    def __init__(self, title=None, parent=None, **content):
+    def __init__(self, title, parent=None, **content):
         parent = parent or self.current().get("tag")
         depth = int(parent.split("-")[1]) + 1 if parent else 0
-        title = title or "%s - task" % self.current().get("title")
         super().__init__(tag=uuid1().hex + "-%s" % depth, depth=depth,
             start=time.time(), status="started", parent=parent, title=title)
         self._write(content)
