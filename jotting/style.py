@@ -33,7 +33,7 @@ class Raw(Style):
 class Log(Style):
 
     def working(self, log):
-        if log["content"]["reason"] is not None:
+        if "reason" in log["content"]:
             metadata = log["metadata"]
             status = metadata["status"]
             timestamp = datetime.datetime.fromtimestamp(log["timestamp"])
@@ -43,7 +43,7 @@ class Log(Style):
                 reason=log["content"]["reason"], info=info)
 
     def success(self, log):
-        if log["content"]["reason"] is not None:
+        if "reason" in log["content"]:
             metadata = log["metadata"]
             status = metadata["status"]
             duration = metadata["stop"] - metadata["start"]
@@ -54,14 +54,15 @@ class Log(Style):
                 reason=log["content"]["reason"], info=info)
 
     def failure(self, log):
-        metadata = log["metadata"]
-        status = metadata["status"]
-        duration = metadata["stop"] - metadata["start"]
-        timestamp = datetime.datetime.fromtimestamp(log["timestamp"])
-        info = "mem: %{:.6}, cpu: %{:.6}".format(log["mem"], log["cpu"])
-        yield "{time} [{status}] {reason} after {duration:.3f} seconds - {info}".format(
-            time=timestamp, status=status, duration=duration,
-            reason=log["content"]["reason"], info=info)
+        if "reason" in log["content"]:
+            metadata = log["metadata"]
+            status = metadata["status"]
+            duration = metadata["stop"] - metadata["start"]
+            timestamp = datetime.datetime.fromtimestamp(log["timestamp"])
+            info = "mem: %{:.6}, cpu: %{:.6}".format(log["mem"], log["cpu"])
+            yield "{time} [{status}] {reason} after {duration:.3f} seconds - {info}".format(
+                time=timestamp, status=status, duration=duration,
+                reason=log["content"]["reason"], info=info)
 
 
 class Tree(Style):

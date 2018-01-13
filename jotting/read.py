@@ -1,10 +1,11 @@
 import json
+from .via import Print
 from .style import Tree
 
 
 class Stream(object):
 
-    def __init__(self, outlet=Tree()):
+    def __init__(self, outlet=Print(Tree())):
         self._logs = {} # series of log queues per tag
         self._tree = {} # the tag paths to each log
         self._sending = None

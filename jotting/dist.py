@@ -1,50 +1,68 @@
 import os
-from copy import deepcopy
-from .style import Raw
+import sys
+import json
+from time import time as now
+from multiprocessing import (
+    Process, JoinableQueue as ProcessQueue, Event as ProcessEvent)
+if sys.version_info > (3, 0):
+    from queue import Queue as ThreadQueue
+else:
+    from Queue import Queue as ThreadQueue
+from threading import Thread, Event as ThreadEvent
 
 
-class Distribute(object):
+class DistributorMixin(object):
 
-    def __init__(self, *places):
-        self._places = places
+    def __init__(self, inbox, stop):
+        super(DistributorMixin, self).__init__()
+        for attr in ("join", "get", "put", "task_done"):
+            if not hasattr(inbox, attr):
+                raise TypeError("Expected some type of joinable"
+                    " queue that implements %r." % attr)
+        self.inbox = inbox
+        self.daemon = True
+        self._outlets = []
+        self._stop = stop
+        self.start()
 
-    def __call__(self, log):
-        for p in self._places:
-            p(deepcopy(log))
-
-
-class Place(object):
-
-    _style = Raw()
-
-    def __new__(cls, handler=None):
-        s = super(Place, cls)
-        def init(*args, **kwargs):
-            self = s.__new__(cls)
-            self.__init__(handler, *args, **kwargs)
-            return self
-        return init
-
-    def __init__(self, handler, *args, **kwargs):
-        self._handler = handler
-        self._args = args
-        self._kwargs = kwargs
-        style = kwargs.pop("style", None)
-        if style is not None:
-            self._style = style
-
-    def style(self, style, *args, **kwargs):
-        self._style = style(*args, **kwargs)
+    def add_outlet(self, outlet):
+        self._outlets.append(outlet)
 
     def __call__(self, log):
-        if self._style is not None:
-            log = self._style(log)
-        if log is not None:
-            self._handler(log, *self._args, **self._kwargs)
+        self.inbox.put(log)
+
+    def deadline(self, timeout):
+        start = now()
+        while not self.inbox.empty():
+            if now() - start > timeout:
+                self.stop()
+                break
+
+    def stop(self):
+        self._stop.set()
+
+    def run(self):
+        while not self._stop.is_set():
+            log = self.inbox.get()
+            try:
+                self.write(log)
+            except:
+                raise
+            finally:
+                self.inbox.task_done()
+
+    def write(self, log):
+        for o in self._outlets:
+            o(log)
 
 
-@Place
-def ToFile(log, filepath):
-    filepath = os.path.realpath(os.path.expanduser(filepath))
-    with open(filepath, "a+") as f:
-        f.write(log)
+class DistributorProcess(DistributorMixin, Process):
+
+    def __init__(self):
+        super(DistributorProcess, self).__init__(ProcessQueue(), ProcessEvent())
+
+
+class DistributorThread(DistributorMixin, Thread):
+
+    def __init__(self):
+        super(DistributorThread, self).__init__(ThreadQueue(), ThreadEvent())
