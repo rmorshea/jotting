@@ -3,7 +3,7 @@ import sys
 import subprocess
 from os import path
 from glob import glob
-from distutil.core import setup
+from distutils.core import setup
 from setuptools import find_packages
 
 #-----------------------------------------------------------------------------
