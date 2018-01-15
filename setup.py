@@ -3,7 +3,7 @@ import sys
 import subprocess
 from os import path
 from glob import glob
-from distutils.core import setup
+from distutil.core import setup
 from setuptools import find_packages
 
 #-----------------------------------------------------------------------------
@@ -23,7 +23,7 @@ Jotting
 
 Logs that explain when, where, and why things happen.
 
-``jotting`` is a log system for Python 3 that can be used to record the causal
+``jotting`` is a log system for Python that can be used to record the causal
 history of an asynchronous or distributed system. These histories are composed
 of actions which, once "started", will begin "working", potentially spawn other
 actions, and eventually end as a "success" or "failure". In the end you're left

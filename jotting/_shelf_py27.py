@@ -1,7 +1,7 @@
 import inspect
 import functools
 
-from .utils import CallMap
+from .util import CallMap
 
 
 class _book_compat(object):

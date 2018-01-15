@@ -1,5 +1,5 @@
 import json
-from .via import Print
+from .to import Print
 from .style import Tree
 
 

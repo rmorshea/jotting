@@ -4,7 +4,7 @@ import datetime
 import inspect
 from copy import deepcopy
 
-from .utils import infer_title
+from .util import infer_title
 
 
 class Style(object):
@@ -34,12 +34,16 @@ class Style(object):
 
 class Raw(Style):
 
+    class Encoder(json.JSONEncoder):
+
+        def default(self, o):
+            try:
+                return super(json.JSONEncoder, self).default(o)
+            except:
+                return str(o)
+
     def default(self, log):
-        try:
-            return json.dumps(log)
-        except:
-            content = {k: str(v) for k, v in log["content"].items()}
-            return json.dumps(dict(log, content=content))
+        return self.Encoder().encode(log)
 
 
 class Log(Style):
@@ -48,30 +52,14 @@ class Log(Style):
         if isinstance(log["metadata"]["title"], str):
             return log
 
-    def started(self, log):
-        metadata = log["metadata"]
-        status = metadata["status"]
-        timestamp = datetime.datetime.fromtimestamp(log["timestamp"])
-        info = "mem: %{:.6}, cpu: %{:.6}".format(log["mem"], log["cpu"])
-        yield "{time} [{status}] {title} - {info}".format(
-            time=timestamp, status=status, title=metadata["title"], info=info)
-
-    def working(self, log):
-        metadata = log["metadata"]
-        status = metadata["status"]
-        timestamp = datetime.datetime.fromtimestamp(log["timestamp"])
-        info = "mem: %{:.6}, cpu: %{:.6}".format(log["mem"], log["cpu"])
-        yield "{time} [{status}] {title} - {info}".format(
-            time=timestamp, status=status, title=metadata["title"], info=info)
-
     def success(self, log):
         metadata = log["metadata"]
         status = metadata["status"]
         duration = metadata["stop"] - metadata["start"]
         timestamp = datetime.datetime.fromtimestamp(log["timestamp"])
         info = "mem: %{:.6}, cpu: %{:.6}".format(log["mem"], log["cpu"])
-        message = "{time} [{status}] {title} after {duration:.3f} seconds - {info}"
-        yield message.format(time=timestamp, status=status,
+        message = "{time} {status} {title} after {duration:.3f} seconds - {info}"
+        yield message.format(time=timestamp, status=status.upper(),
             title=metadata["title"], info=info, duration=duration)
 
     def failure(self, log):
@@ -80,8 +68,8 @@ class Log(Style):
         duration = metadata["stop"] - metadata["start"]
         timestamp = datetime.datetime.fromtimestamp(log["timestamp"])
         info = "mem: %{:.6}, cpu: %{:.6}".format(log["mem"], log["cpu"])
-        message = "{time} [{status}] {title} after {duration:.3f} seconds - {info}"
-        yield message.format(time=timestamp, status=status,
+        message = "{time} {status} {title} after {duration:.3f} seconds - {info}"
+        yield message.format(time=timestamp, status=status.upper(),
             title=metadata["title"], info=info, duration=duration)
 
 

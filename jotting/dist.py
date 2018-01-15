@@ -23,17 +23,20 @@ class DistributorMixin(object):
         self.daemon = True
         self._outlets = []
         self._stop = stop
-        self.start()
 
-    def add_outlet(self, outlet):
-        self._outlets.append(outlet)
+    def set_outlets(self, *outlets):
+        self._outlets = list(outlets)
 
     def __call__(self, log):
+        if not self.is_alive():
+            self.start()
         self.inbox.put(log)
 
     def deadline(self, timeout):
         start = now()
         while not self.inbox.empty():
+            if not self.is_alive():
+                self.start()
             if now() - start > timeout:
                 self.stop()
                 break
@@ -45,13 +48,13 @@ class DistributorMixin(object):
         while not self._stop.is_set():
             log = self.inbox.get()
             try:
-                self.write(log)
+                self.send(log)
             except:
                 raise
             finally:
                 self.inbox.task_done()
 
-    def write(self, log):
+    def send(self, log):
         for o in self._outlets:
             o(log)
 

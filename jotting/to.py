@@ -27,9 +27,9 @@ class Outlet(object):
 
 
 @outlet
-def File(log, filepath):
-    filepath = os.path.realpath(os.path.expanduser(filepath))
-    with open(filepath, "a+") as f:
+def File(log, path):
+    path = os.path.realpath(os.path.expanduser(path))
+    with open(path, "a+") as f:
         f.write(log)
 
 

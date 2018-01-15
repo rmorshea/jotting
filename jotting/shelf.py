@@ -11,8 +11,9 @@ import functools
 from uuid import uuid1
 from weakref import WeakKeyDictionary
 
-from .utils import CallMap, infer_title
+from .util import CallMap, infer_title
 from .dist import DistributorThread
+from . import to, style
 
 if sys.version_info >= (3, 5):
     from ._shelf_py35 import _book_compat
@@ -24,13 +25,15 @@ class book(dict, _book_compat):
 
     _shelves = WeakKeyDictionary()
     _distributor = DistributorThread()
+    _distributor.set_outlets(to.Print(style.Tree()))
 
     @classmethod
     def distribute(cls, *outlets):
-        for o in outlets:
-            cls._distributor.add_outlet(o)
+        cls._distributor.set_outlets(*outlets)
 
     def __init__(self, title, parent=None, **content):
+        if isinstance(title, str):
+            title = title.format(**content)
         parent = parent or self.current().get("tag")
         depth = int(parent.split("-")[1]) + 1 if parent else 0
         super().__init__(tag=uuid1().hex + "-%s" % depth, depth=depth,
