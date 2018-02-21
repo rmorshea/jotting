@@ -12,7 +12,7 @@ from setuptools import find_packages
 
 url = "https://github.com/rmorshea/jotting"
 project = "jotting"
-version = "0.1.3"
+version = "0.1.4"
 author = "Ryan Morshead"
 email = "ryan.morshead@gmail.com"
 summary = "causally related logging messages"
@@ -50,10 +50,10 @@ root = path.join(here, project)
 # Finalize Parameters
 #-----------------------------------------------------------------------------
 
-if sys.version_info >= (3, 5):
-    requires = ["psutil"]
+if sys.version_info < (3, 5):
+    requires = ["funcsigs"]
 else:
-    requires = ["psutil", "funcsigs"]
+    requires = []
 
 parameters = dict(
     url=url,
