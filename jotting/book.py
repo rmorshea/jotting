@@ -3,7 +3,6 @@ import os
 import json
 import time
 import types
-import psutil
 import inspect
 import asyncio
 import threading
@@ -72,13 +71,10 @@ class book(dict, _book_compat):
         cls.current()._conclusion.update(content)
 
     def _write(self, content):
-        process = psutil.Process(os.getpid())
         log = {
             "metadata": self.copy(),
             "content": content,
             "timestamp": time.time(),
-            "mem": process.memory_percent(),
-            "cpu": process.cpu_percent(),
         }
         self._distributor(log)
 

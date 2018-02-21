@@ -52,25 +52,22 @@ class Log(Style):
         if isinstance(log["metadata"]["title"], str):
             return log
 
-    def success(self, log):
+    def _completed(self, log):
         metadata = log["metadata"]
         status = metadata["status"]
         duration = metadata["stop"] - metadata["start"]
         timestamp = datetime.datetime.fromtimestamp(log["timestamp"])
-        info = "mem: %{:.6}, cpu: %{:.6}".format(log["mem"], log["cpu"])
-        message = "{time} {status} {title} after {duration:.3f} seconds - {info}"
+        info = ", ".join(map(lambda i: "%s: %s" % i, log["content"].items()))
+        message = "{time} {status} {title} after {duration:.3f} seconds"
+        if len(info) > 50:
+            info = info[:47] + "..."
+        if info:
+            message += " - {info}"
         yield message.format(time=timestamp, status=status.upper(),
             title=metadata["title"], info=info, duration=duration)
 
-    def failure(self, log):
-        metadata = log["metadata"]
-        status = metadata["status"]
-        duration = metadata["stop"] - metadata["start"]
-        timestamp = datetime.datetime.fromtimestamp(log["timestamp"])
-        info = "mem: %{:.6}, cpu: %{:.6}".format(log["mem"], log["cpu"])
-        message = "{time} {status} {title} after {duration:.3f} seconds - {info}"
-        yield message.format(time=timestamp, status=status.upper(),
-            title=metadata["title"], info=info, duration=duration)
+    success = _completed
+    failure = _completed
 
 
 class Tree(Style):
