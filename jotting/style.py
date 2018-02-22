@@ -4,8 +4,6 @@ import datetime
 import inspect
 from copy import deepcopy
 
-from .util import infer_title
-
 
 class Style(object):
 
@@ -71,15 +69,6 @@ class Log(Style):
 
 
 class Tree(Style):
-
-    def _pre(self, log):
-        metadata = log["metadata"]
-        if not isinstance(metadata["title"], str):
-            try:
-                metadata["title"] = infer_title(metadata["title"])
-            except:
-                pass
-        return log
 
     def started(self, log):
         content, metadata = log["content"], log["metadata"]

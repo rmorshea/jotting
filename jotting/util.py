@@ -1,4 +1,7 @@
 import sys
+import types
+import inspect
+
 if sys.version_info > (3, 3):
     from inspect import signature
 
@@ -11,15 +14,48 @@ else:
         return p.kind._name
 
 
-def infer_title(task):
-    if hasattr(task, "__name__"):
-        if hasattr(task, "__module__"):
-            prefix = getattr(task, "__module__") + "."
-        else:
-            prefix = ""
-        return prefix + task.__name__
+def to_title(x, inputs):
+    if isinstance(x, str):
+        title = x.format(**inputs)
     else:
-        raise ValueError("The title of %r could be infered." % task)
+        try:
+            x = enclosed(x)
+        except TypeError:
+            title = str(x)
+        else:
+            title = "%s.%s" % (
+                x.__module__,
+                x.__name__)
+    return title
+
+
+def enclosed(x):
+    """Return a function that was decorated by another."""
+    if inspect.isclass(x):
+        return x
+    elif isinstance(x, types.MethodType):
+        x = x.__func__
+    elif not isinstance(x, types.FunctionType):
+        raise TypeError("%r is not a function or class." % x)
+    name = x.__name__
+    module = x.__module__
+    candidates = []
+    if x.__closure__:
+        for cell in x.__closure__:
+            contents = cell.cell_contents
+            if callable(contents):
+                if name == getattr(contents, "__name__", None):
+                    if module == getattr(contents, "__module__", None):
+                        candidates.append(enclosed(contents))
+        if len(candidates) == 0:
+            raise TypeError("Bad wrapping - make sure to use functools.wraps")
+        elif len(candidates) > 1:
+            listed = ", ".join(map(repr, candidates))
+            raise TypeError("Bad wrapping - cannot distinguish between %s" % listed)
+        else:
+            return candidates[0]
+    else:
+        return x
 
 
 class CallMap(object):
