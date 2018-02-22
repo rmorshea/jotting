@@ -12,7 +12,7 @@ from setuptools import find_packages
 
 url = "https://github.com/rmorshea/jotting"
 project = "jotting"
-version = "0.1.4"
+version = "0.1.5"
 author = "Ryan Morshead"
 email = "ryan.morshead@gmail.com"
 summary = "causally related logging messages"
