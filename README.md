@@ -177,12 +177,12 @@ response = get_url("https://google.com")
 Now we will find that we got a print out like this:
 
 ```
-2018-01-14 17:37:40.545601 SUCCESS getting https://google.com after 1.144 seconds - mem: %0.333023, cpu: %0.0
+2018-02-21 19:46:03.156873 SUCCESS getting https://google.com after 0.315 seconds - returned: <Response [200]>
 ```
 
 Along with a `logbox.txt` file on our desktop with the following contents:
 
 ```json
-{"metadata": {"tag": "95c8e264f99511e7bbfa8c8590280283-0", "depth": 0, "start": 1515980651.650501, "status": "started", "parent": null, "title": "getting https://google.com"}, "content": {"url": "https://google.com"}, "timestamp": 1515980651.650592, "mem": 0.3244638442993164, "cpu": 0.0}
-{"metadata": {"tag": "95c8e264f99511e7bbfa8c8590280283-0", "depth": 0, "start": 1515980651.650501, "status": "success", "parent": null, "title": "getting https://google.com", "stop": 1515980652.730178}, "content": {"returned": "<Response [200]>"}, "timestamp": 1515980652.730258, "mem": 0.32799243927001953, "cpu": 0.0}
+{"metadata": {"tag": "ca5d60ee174111e8b6348c8590280283-0", "depth": 0, "start": 1519243197.023079, "status": "started", "parent": null, "title": "getting https://google.com"}, "content": {"url": "https://google.com"}, "timestamp": 1519243197.023083}
+{"metadata": {"tag": "ca5d60ee174111e8b6348c8590280283-0", "depth": 0, "start": 1519243197.023079, "status": "success", "parent": null, "title": "getting https://google.com", "stop": 1519243197.5876129}, "content": {"returned": "<Response [200]>"}, "timestamp": 1519243197.587616}
 ```
