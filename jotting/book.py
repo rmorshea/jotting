@@ -4,7 +4,6 @@ import json
 import time
 import types
 import inspect
-import asyncio
 import threading
 import functools
 from uuid import uuid1
@@ -34,7 +33,7 @@ class book(dict, _book_compat):
         title = to_title(title, content)
         parent = parent or self.current().get("tag")
         depth = int(parent.split("-")[1]) + 1 if parent else 0
-        super().__init__(tag=uuid1().hex + "-%s" % depth, depth=depth,
+        super(book, self).__init__(tag=uuid1().hex + "-%s" % depth, depth=depth,
             start=time.time(), status="started", parent=parent, title=title)
         self._write(content)
         self._conclusion = {}

@@ -1,5 +1,6 @@
 import inspect
 import functools
+import threading
 
 from .util import CallMap
 
