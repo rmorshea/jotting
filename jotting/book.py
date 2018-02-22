@@ -3,15 +3,15 @@ import os
 import json
 import time
 import types
+import hashlib
 import inspect
 import threading
 import functools
-from uuid import uuid4
 from weakref import WeakKeyDictionary
 
 from .util import to_title
 from .dist import DistributorThread
-from . import to, style
+from . import to, style, read
 
 if sys.version_info >= (3, 5):
     from ._book_py35 import _book_compat
@@ -23,7 +23,8 @@ class book(_book_compat):
 
     _shelves = WeakKeyDictionary()
     _distributor = DistributorThread()
-    _distributor.set_outlets(to.Print(style.Tree()))
+    _distributor.set_outlets(
+        read.Stream(to.Print(style.Tree())))
 
     @classmethod
     def distribute(cls, *outlets):
@@ -31,17 +32,17 @@ class book(_book_compat):
 
     def __init__(self, title, parent=None, **content):
         title = to_title(title, content)
-        tag, depth = self._make_tag(parent or self.current())
-        self._metadata = dict(
-            title=title, tag=tag, depth=depth,
-            status="started", parent=parent,
-        )
+        tag, parent = self._make_tag(parent or self.current())
+        self._metadata = dict(title=title, tag=tag, parent=parent)
         self._opening = content
         self._conclusion = {}
 
     def __enter__(self):
         self.shelf().append(self)
-        self._metadata["start"] = time.time()
+        self._metadata.update(
+            start=time.time(),
+            status="started"
+        )
         self._write(self._opening)
         self._metadata["status"] = "working"
         return self
@@ -66,6 +67,11 @@ class book(_book_compat):
 
     def __getitem__(self, key):
         return self._metadata[key]
+
+    def __repr__(self):
+        name = type(self).__name__
+        data = map(lambda i: "%s=%s" % i, self._metadata.items())
+        return "%s(%s)" % (name, ", ".join(data))
 
     @property
     def tag(self):
@@ -104,14 +110,12 @@ class book(_book_compat):
     def _make_tag(parent=None):
         if isinstance(parent, (book, dict)):
             parent = parent.get("tag")
-        if parent and parent.endswith("-book"):
-            depth = int(parent[:-5].rsplit("-", 1)[1]) + 1
-        else:
-            # this is an arbitrary string or None
-            depth = 0
-        return "%s-%s-book" % (uuid4().hex, depth), depth
-
-    def __repr__(self):
-        name = type(self).__name__
-        data = map(lambda i: "%s=%s" % i, self._metadata.items())
-        return "%s(%s)" % (name, ", ".join(data))
+        if parent is None:
+            return hashlib.sha256().hexdigest(), None
+        elif isinstance(parent, str):
+            parent = parent.encode('utf-8')
+        elif not isinstance(parent, bytes):
+            raise TypeError("Expected a book, bytes, or string, not %r" % parent)
+        m = hashlib.sha256()
+        m.update(parent)
+        return m.hexdigest(), parent.decode('utf-8')

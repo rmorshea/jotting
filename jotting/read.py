@@ -5,7 +5,7 @@ from .style import Tree
 
 class Stream(object):
 
-    def __init__(self, outlet=Print(Tree())):
+    def __init__(self, outlet):
         self._logs = {} # series of log queues per tag
         self._tree = {} # the tag paths to each log
         self._sending = None
@@ -30,8 +30,8 @@ class Stream(object):
         tag = metadata["tag"]
         parent = metadata["parent"]
         self._logs[tag] = [log]
-        tree = self._tree.setdefault(parent, [])
-        self._tree[tag] = tree + [tag]
+        lineage = self._tree.setdefault(parent, [])
+        self._tree[tag] = lineage + [tag]
 
     def _continue(self, log):
         tag = log["metadata"]["tag"]
@@ -51,8 +51,8 @@ class Stream(object):
         for t in self._tree[tag]:
             queue = self._logs[t]
             for _ in range(len(queue)):
-                self._outlet(queue.pop(0))
-        self._outlet(log)
+                self._push(queue.pop(0))
+        self._push(log)
         if log["metadata"]["parent"] is None:
             self._sending = None
             if self._pending:
@@ -61,3 +61,9 @@ class Stream(object):
             self._sending = self._tree[tag][0]
         del self._logs[tag]
         del self._tree[tag]
+
+    def _push(self, log):
+        tag = log["metadata"]["tag"]
+        depth = len(self._tree[tag]) - 1
+        log["metadata"]["depth"] = depth
+        self._outlet(log)

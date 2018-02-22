@@ -70,6 +70,16 @@ class Log(Style):
 
 class Tree(Style):
 
+    def _pre(self, log):
+        if "depth" not in log["metadata"]:
+            from .read import Stream
+            raise TypeError((
+                "A depth was not added to the log's metadata. "
+                "Try wrapping this style in a buffer like %r "
+                "that will determine a logs depth, and add it to its metadata."
+            ) % Stream)
+        return log
+
     def started(self, log):
         content, metadata = log["content"], log["metadata"]
         indent = "|   " * metadata["depth"]
