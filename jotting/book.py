@@ -19,7 +19,7 @@ else:
     from ._book_py27 import _book_compat
 
 
-class book(dict, _book_compat):
+class book(_book_compat):
 
     _shelves = WeakKeyDictionary()
     _distributor = DistributorThread()
@@ -32,31 +32,51 @@ class book(dict, _book_compat):
     def __init__(self, title, parent=None, **content):
         title = to_title(title, content)
         parent = parent or self.current().get("tag")
-        depth = int(parent.split("-")[1]) + 1 if parent else 0
-        super(book, self).__init__(tag=uuid1().hex + "-%s" % depth, depth=depth,
-            start=time.time(), status="started", parent=parent, title=title)
+        if parent and parent.startswith("BOOK-"):
+            depth = int(parent.rsplit("-", 1)[1]) + 1
+        else:
+            # this is an arbitrary string or None
+            depth = 0
+        self._metadata = dict(title=title,
+            tag="BOOK-%s-%s" % (uuid1().hex, depth),
+            depth=depth, start=time.time(),
+            status="started", parent=parent)
         self._write(content)
         self._conclusion = {}
 
     def __enter__(self):
         self.shelf().append(self)
-        self.update(status="working")
+        self._metadata.update(status="working")
         return self
 
     def __exit__(self, *exc):
-        self["stop"] = time.time()
+        self._metadata["stop"] = time.time()
         if exc[0] is not None:
             etype = exc[0].__name__
-            self.update(status="failure")
+            self._metadata.update(status="failure")
             self._conclusion[etype] = str(exc[1])
         else:
-            self.update(status="success")
+            self._metadata.update(status="success")
         self._write(self._conclusion)
         self.shelf().pop()
         return False
 
-    def resume(self, tag):
-        return self.bind(parent=tag)
+    @property
+    def tag(self):
+        return self._metadata['tag']
+
+    @property
+    def metadata(self):
+        return self._metadata.copy()
+
+    def __len__(self):
+        return len(self._metadata)
+
+    def __iter__(self):
+        return iter(self._metadata)
+
+    def __getitem__(self, key):
+        return self._metadata[key]
 
     @classmethod
     def write(cls, *args, **kwargs):
@@ -70,7 +90,7 @@ class book(dict, _book_compat):
 
     def _write(self, content):
         log = {
-            "metadata": self.copy(),
+            "metadata": self.metadata,
             "content": content,
             "timestamp": time.time(),
         }

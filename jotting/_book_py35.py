@@ -10,7 +10,11 @@ class _book_compat(object):
 
     @classmethod
     def shelf(cls):
-        task = asyncio.Task.current_task() or threading.current_thread()
+        try:
+            task = asyncio.Task.current_task()
+        except RuntimeError:
+            task = None
+        task = task or threading.current_thread()
         if task not in cls._shelves:
             cls._shelves[task] = [{"title": "__main__"}]
         return cls._shelves[task]

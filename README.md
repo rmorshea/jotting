@@ -14,10 +14,10 @@ Install `jotting` with `pip`:
 $ pip install jotting
 ```
 
-Then `requests` to follow along with the examples:
+Then `requests` and `flask` to follow along with the examples:
 
 ```bash
-$ pip install requests
+$ pip install requests flask
 ```
 
 ## Bookmarking
@@ -147,11 +147,15 @@ This will produce just the kind of fine grained logs we need:
 |       | duration: 0.001 seconds
 ```
 
-# Distribution
+# Stashing Outputs
 
 Under the hood, `jotting` creates json encoded messages that contain the information
 required to reconstruct a history of actions. If we need to reconfigure where and/or
-how `jotting` logs, we choose new outlets and styles. In a case where we want to print terse logs to sdtout, but save raw json blobs to a file for later consumption, we can use a `Log` styled `Print` outlet and a `Raw` styled `File` outlet respectively. For the `Log` style, only the successes and failures of logs where a title has been given are reported - thus we will title our `book.mark` with something explanatory:
+how `jotting` logs, we choose new outlets and styles. In a case where we want to
+print terse logs to sdtout, but save raw json blobs to a file for later consumption,
+we can use a `Log` styled `Print` outlet and a `Raw` styled `File` outlet respectively.
+For the `Log` style, only the successes and failures of logs where a title has been
+given are reported - thus we will title our `book.mark` with something explanatory:
 
 ```python
 import requests
@@ -186,3 +190,51 @@ Along with a `logbox.txt` file on our desktop with the following contents:
 {"metadata": {"tag": "ca5d60ee174111e8b6348c8590280283-0", "depth": 0, "start": 1519243197.023079, "status": "started", "parent": null, "title": "getting https://google.com"}, "content": {"url": "https://google.com"}, "timestamp": 1519243197.023083}
 {"metadata": {"tag": "ca5d60ee174111e8b6348c8590280283-0", "depth": 0, "start": 1519243197.023079, "status": "success", "parent": null, "title": "getting https://google.com", "stop": 1519243197.5876129}, "content": {"returned": "<Response [200]>"}, "timestamp": 1519243197.587616}
 ```
+
+# Distributed Systems
+
+We've covered a lot of use cases, but we can go even further. In the real world
+we aren't working with single threads, processes, or machines. Modern systems
+are asynchronous and distributed. Following the causes and effects within these
+systems quickly becomes impossible. However with `jotting`, it's possible to
+begin a `book` using the `'tag'` of a parent task that triggered it:
+
+```python
+from flask import Flask, jsonify
+from jotting import book
+
+
+def ping(client):
+    with book('ping') as b:
+        client.get('/api/%s' % b.tag)
+
+
+app = Flask(__name__)
+
+
+@app.route("/api/<string:task>")
+def index(task):
+    with book('api', task):
+        book.close(status=200)
+        return jsonify({"status": 200})
+
+
+ping(app.test_client())
+```
+
+```
+|-- started: ping
+|   @ 2018-02-22 00:15:56.233328
+|   |-- started: api
+|   |   @ 2018-02-22 00:15:56.234694
+|   |   `-- success: api
+|   |       @ 2018-02-22 00:15:56.234951
+|   |       | status: 200
+|   |       | duration: 0.000 seconds
+|   `-- success: ping
+|       @ 2018-02-22 00:15:56.239689
+|       | duration: 0.006 seconds
+```
+
+In this way we are able to keep track of the fact that it was `ping` that caused
+our application to respond, and no some other client.
