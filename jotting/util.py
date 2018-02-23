@@ -98,3 +98,14 @@ class CallMap(object):
     @staticmethod
     def VAR_KEYWORD(index, param, args, kwargs, used_keys):
         return {k : v for k, v in kwargs.items() if k in used_keys}
+
+
+class Switch(object):
+
+    def _switch(self, log, *args, **kwargs):
+        status = log["metadata"]["status"]
+        method = getattr(self, "_" + status, None) or self._default
+        return method(log, *args, **kwargs)
+
+    def default(self, *args, **kwargs):
+        pass

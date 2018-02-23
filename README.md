@@ -197,44 +197,62 @@ We've covered a lot of use cases, but we can go even further. In the real world
 we aren't working with single threads, processes, or machines. Modern systems
 are asynchronous and distributed. Following the causes and effects within these
 systems quickly becomes impossible. However with `jotting`, it's possible to
-begin a `book` using the `'tag'` of a parent task that triggered it:
+begin a `book` using the `tag` of a parent task that triggered it:
+
+*Note that threads are supported without the need to pass a `tag`*
 
 ```python
-from flask import Flask, jsonify
-from jotting import book
+import sys
+if sys.version_info < (3, 0):
+    from Queue import Queue
+else:
+    from queue import Queue
+import threading, requests
+from jotting import book, to, read
+
+book.distribute(to.File(path="~/Desktop/logbox.txt"))
 
 
-def ping(client):
-    with book('ping') as b:
-        client.get('/api/%s' % b.tag)
+def get(queue, url):
+    queue.put(requests.get(url).status_code)
 
 
-app = Flask(__name__)
+@book.mark
+def schedule(function, *args):
+    q = Queue()
+    for x in args:
+        title = "%s(%r)" % (function.__name__, x)
+        mark = book.mark(title, book.current().tag)
+        threading.Thread(target=mark(function), args=(q, x)).start()
+    return [q.get(timeout=5) for i in range(len(args))]
 
 
-@app.route("/api/<string:task>")
-def index(task):
-    with book('api', task):
-        book.close(status=200)
-        return jsonify({"status": 200})
-
-
-ping(app.test_client())
+schedule(get, "https://google.com", "https://wikipedia.org")
 ```
 
 ```
-|-- started: ping
-|   @ 2018-02-22 00:15:56.233328
-|   |-- started: api
-|   |   @ 2018-02-22 00:15:56.234694
-|   |   `-- success: api
-|   |       @ 2018-02-22 00:15:56.234951
-|   |       | status: 200
-|   |       | duration: 0.000 seconds
-|   `-- success: ping
-|       @ 2018-02-22 00:15:56.239689
-|       | duration: 0.006 seconds
+|-- started: __main__.schedule
+|   @ 2018-02-23 14:56:49.190212
+|   | function: <function get at 0x10f1e5ae8>
+|   | args: ['https://google.com', 'https://wikipedia.org']
+|   |-- started: get('https://google.com')
+|   |   @ 2018-02-23 14:56:49.191288
+|   |   | queue: <queue.Queue object at 0x10fab8e80>
+|   |   | url: https://google.com
+|   |   `-- success: get('https://google.com')
+|   |       @ 2018-02-23 14:56:49.518117
+|   |       | returned: None
+|   |       | duration: 0.327 seconds
+|   |-- started: get('https://wikipedia.org')
+|   |   @ 2018-02-23 14:56:49.192486
+|   |   | queue: <queue.Queue object at 0x10fab8e80>
+|   |   | url: https://wikipedia.org
+|   |   `-- success: get('https://wikipedia.org')
+|   |       @ 2018-02-23 14:56:49.412165
+|   |       | returned: None
+|   |       | duration: 0.220 seconds
+|   `-- success: __main__.schedule
+|       @ 2018-02-23 14:56:49.518363
+|       | returned: [200, 200]
+|       | duration: 0.328 seconds
 ```
-
-In this way we are able to keep track of the fact that it was `ping` that caused
-our application to respond, and no some other client.

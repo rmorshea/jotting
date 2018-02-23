@@ -3,10 +3,10 @@ import os
 import json
 import time
 import types
-import hashlib
 import inspect
 import threading
 import functools
+from uuid import uuid1
 from weakref import WeakKeyDictionary
 
 from .util import to_title
@@ -32,8 +32,9 @@ class book(_book_compat):
 
     def __init__(self, title, parent=None, **content):
         title = to_title(title, content)
-        tag, parent = self._make_tag(parent or self.current())
-        self._metadata = dict(title=title, tag=tag, parent=parent)
+        parent = parent or self.current().get("tag")
+        self._metadata = dict(title=title, tag=uuid1().hex,
+            parent=parent or self.current().get("tag"))
         self._opening = content
         self._conclusion = {}
 
@@ -105,17 +106,3 @@ class book(_book_compat):
     @classmethod
     def current(cls):
         return cls.shelf()[-1]
-
-    @staticmethod
-    def _make_tag(parent=None):
-        if isinstance(parent, (book, dict)):
-            parent = parent.get("tag")
-        if parent is None:
-            return hashlib.sha256().hexdigest(), None
-        elif isinstance(parent, str):
-            parent = parent.encode('utf-8')
-        elif not isinstance(parent, bytes):
-            raise TypeError("Expected a book, bytes, or string, not %r" % parent)
-        m = hashlib.sha256()
-        m.update(parent)
-        return m.hexdigest(), parent.decode('utf-8')

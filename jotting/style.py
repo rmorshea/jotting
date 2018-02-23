@@ -2,26 +2,21 @@ import sys
 import json
 import datetime
 import inspect
-from copy import deepcopy
+from .util import Switch
 
 
-class Style(object):
-
-    default = None
+class Style(Switch):
 
     def __call__(self, log):
-        log = deepcopy(log)
-        method = getattr(self, log["metadata"]["status"], self.default)
-        if method is not None:
-            log = self._pre(log)
-            if log:
-                lines = method(log)
-                if lines and isinstance(lines, str):
-                    lines = [lines]
-                else:
-                    lines = list(lines)
-                if lines:
-                    return self._post("\n".join(lines) + "\n")
+        log = self._pre(log)
+        if log:
+            lines = self._switch(log)
+            if lines and isinstance(lines, str):
+                lines = [lines]
+            else:
+                lines = list(lines)
+            if lines:
+                return self._post("\n".join(lines) + "\n")
 
     def _pre(self, log):
         return log
@@ -40,7 +35,7 @@ class Raw(Style):
             except:
                 return str(o)
 
-    def default(self, log):
+    def _default(self, log):
         return self.Encoder().encode(log)
 
 
@@ -64,8 +59,8 @@ class Log(Style):
         yield message.format(time=timestamp, status=status.upper(),
             title=metadata["title"], info=info, duration=duration)
 
-    success = _completed
-    failure = _completed
+    _success = _completed
+    _failure = _completed
 
 
 class Tree(Style):
@@ -80,7 +75,7 @@ class Tree(Style):
             ) % Stream)
         return log
 
-    def started(self, log):
+    def _started(self, log):
         content, metadata = log["content"], log["metadata"]
         indent = "|   " * metadata["depth"]
         timestamp = datetime.datetime.fromtimestamp(log["timestamp"])
@@ -91,7 +86,7 @@ class Tree(Style):
         for k, v in content.items():
             yield indent + "|   | {0}: {1}".format(k, v)
 
-    def working(self, log):
+    def _working(self, log):
         content, metadata = log["content"], log["metadata"]
         indent = "|   " * (metadata["depth"] + 1)
         timestamp = datetime.datetime.fromtimestamp(log["timestamp"])
@@ -102,7 +97,7 @@ class Tree(Style):
         for k, v in content.items():
             yield indent + "|   | {0}: {1}".format(k, v)
 
-    def success(self, log):
+    def _success(self, log):
         content, metadata = log["content"], log["metadata"]
         indent = "|   " * (metadata["depth"] + 1)
         timestamp = datetime.datetime.fromtimestamp(log["timestamp"])
@@ -115,7 +110,7 @@ class Tree(Style):
         for k, v in content.items():
             yield indent + "    | {0}: {1}".format(k, v)
 
-    def failure(self, log):
+    def _failure(self, log):
         content, metadata = log["content"], log["metadata"]
         indent = "|   " * (metadata["depth"] + 1)
         timestamp = datetime.datetime.fromtimestamp(log["timestamp"])

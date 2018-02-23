@@ -36,3 +36,4 @@ def File(log, path):
 @outlet
 def Print(log):
     sys.stdout.write(log)
+    sys.stdout.flush()
