@@ -67,29 +67,41 @@ class Stream(Switch):
 class File(Switch):
 
     def __init__(self, filename):
-        filename = os.path.realpath(os.path.expanduser(filename))
-        with open(filename, "r") as f:
+        self.filename = os.path.realpath(os.path.expanduser(filename))
+
+    def _reload(self):
+        with open(self.filename, "r") as f:
             lines = f.read().split("\n")
             logs = map(json.loads, (l for l in lines if l))
-        todo = sorted(logs, key=lambda l: l["timestamp"])
 
-        started = [None]
+        todo = sorted(logs, key=lambda l: l["timestamp"])
+        worstcase = len(todo) ** 2
+
+        count = 0
+        started = [{"metadata": {"tag": None}}]
         self._order = []
         while len(todo):
+            if count > worstcase:
+                incomplete = list(map(lambda l : l["metadata"]["title"], todo))
+                raise RuntimeError("Incomplete log set for %r" % incomplete)
             self._switch(todo.pop(0), started, self._order, todo)
+            count += 1
 
     def _started(self, log, started, order, todo):
         tag = log["metadata"]["tag"]
         parent = log["metadata"]["parent"]
-        if started[-1] != parent:
+        if started[-1]["metadata"]["tag"] != parent:
             todo.append(log)
         else:
-            started.append(tag)
+            started.append(log)
             order.append(log)
 
     def _working(self, log, started, order, todo):
+        tag = log["metadata"]["tag"]
         parent = log["metadata"]["parent"]
-        if started[-1] != parent:
+        started_tag = started[-1]["metadata"]["tag"]
+        started_parent = started[-1]["metadata"]["parent"]
+        if tag not in (started_tag, started_parent):
             todo.append(log)
         else:
             order.append(log)
@@ -97,11 +109,12 @@ class File(Switch):
     def _default(self, log, started, order, todo):
         tag = log["metadata"]["tag"]
         ahead = map(lambda l : l["metadata"]["parent"], todo)
-        if started[-1] == tag and tag not in ahead:
+        if started[-1]["metadata"]["tag"] == tag and tag not in ahead:
             started.pop()
             order.append(log)
         else:
             todo.append(log)
 
     def __call__(self, outlet=Stream(Print(Tree()))):
+        self._reload()
         list(map(outlet, self._order))
