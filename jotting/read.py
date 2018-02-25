@@ -1,19 +1,61 @@
 import os
 import json
-from .to import Print
 from .style import Tree
 from .util import Switch
-from collections import defaultdict
+
+
+class Complete(object):
+
+    def __init__(self, source):
+        if isinstance(source, str):
+            path = os.path.realpath(os.path.expanduser(source))
+            with open(path, "r") as f:
+                lines = f.read().split("\n")
+                source = map(json.loads, (l for l in lines if l))
+        self._logs = self._load(source)
+
+    def _load(self, source):
+        logs, working, done = [], [], []
+        start = lambda l: l["metadata"]["timestamps"][0]
+        for l in sorted(source, key=start):
+            status = l["metadata"]["status"]
+            if status == "started":
+                logs.append(l)
+            elif status == "working":
+                working.append(l)
+            else:
+                done.append(l)
+        self._insert(logs, working)
+        self._insert(logs, done)
+        return logs
+
+    def _insert(self, logs, todo):
+        index = len(logs) - 1
+        while len(todo):
+            t = todo.pop()
+            t_m = t["metadata"]
+            t_t = t_m["timestamps"][-1]
+            for i, l in enumerate(reversed(logs)):
+                l_m = l["metadata"]
+                l_t = l_m["timestamps"][-1]
+                if t_m["tag"] in (l_m["tag"], l_m["parent"]) and l_t < t_t:
+                    logs.insert(len(logs) - i, t)
+                    break
+            else:
+                raise ValueError("Incomplete log set.")
+
+    def __iter__(self):
+        return iter(self._logs)
+
+    def __repr__(self):
+        return "".join(map(Tree(), self._logs))
 
 
 class Stream(Switch):
 
-    def __init__(self, outlet=Print(Tree())):
-        self._logs = {} # series of log queues per tag
-        self._tree = {} # the tag paths to each log
-        self._sending = None
-        self._pending = []
-        self._outlet = outlet
+    def __init__(self, *outlets):
+        self._hold = [] # all the logs up to that point
+        self._outlets = outlets
 
     def __call__(self, log):
         if isinstance(log, str):
@@ -21,100 +63,37 @@ class Stream(Switch):
         self._switch(log)
 
     def _started(self, log):
-        metadata = log["metadata"]
-        tag = metadata["tag"]
-        parent = metadata["parent"]
-        self._logs[tag] = [log]
-        lineage = self._tree.setdefault(parent, [])
-        self._tree[tag] = lineage + [tag]
+        tag = log["metadata"]["tag"]
+        parent = log["metadata"]["parent"]
+        self._hold.append(log)
 
     def _working(self, log):
-        tag = log["metadata"]["tag"]
-        self._logs[tag].append(log)
+        self._hold.append(log)
 
     def _default(self, log):
-        tag = log["metadata"]["tag"]
-        if self._sending is None:
-            self._send(log)
-        elif self._sending == self._tree.get(tag, [None])[0]:
-            self._send(log)
+        for i, l in enumerate(reversed(self._hold)):
+            meta = l["metadata"]
+            if log["metadata"]["tag"] in (meta["parent"], meta["tag"]):
+                self._hold.insert(-i, log)
+                break
         else:
-            self._pending.append(log)
+            self._hold.append(log)
+        done = set()
+        send = []
+        for i, l in enumerate(reversed(self._hold)):
+            m = l["metadata"]
+            if m["status"] in ("success", "failure"):
+                done.add(m["tag"])
+            if m["status"] == "started":
+                if m["tag"] not in done:
+                    send.insert(0, l)
+                else:
+                    send.append(l)
+            else:
+                send.append(l)
+        list(map(self._send, send))
+        self._hold.clear()
 
     def _send(self, log):
-        tag = log["metadata"]["tag"]
-        for t in self._tree[tag]:
-            queue = self._logs[t]
-            for _ in range(len(queue)):
-                self._push(queue.pop(0))
-        self._push(log)
-        if log["metadata"]["parent"] is None:
-            self._sending = None
-            if self._pending:
-                self._send(self._pending.pop(0))
-        else:
-            self._sending = self._tree[tag][0]
-        del self._logs[tag]
-        del self._tree[tag]
-
-    def _push(self, log):
-        tag = log["metadata"]["tag"]
-        depth = len(self._tree[tag]) - 1
-        log["metadata"]["depth"] = depth
-        self._outlet(log)
-
-
-class File(Switch):
-
-    def __init__(self, filename):
-        self.filename = os.path.realpath(os.path.expanduser(filename))
-
-    def _reload(self):
-        with open(self.filename, "r") as f:
-            lines = f.read().split("\n")
-            logs = map(json.loads, (l for l in lines if l))
-
-        todo = sorted(logs, key=lambda l: l["timestamp"])
-        worstcase = len(todo) ** 2
-
-        count = 0
-        started = [{"metadata": {"tag": None}}]
-        self._order = []
-        while len(todo):
-            if count > worstcase:
-                incomplete = list(map(lambda l : l["metadata"]["title"], todo))
-                raise RuntimeError("Incomplete log set for %r" % incomplete)
-            self._switch(todo.pop(0), started, self._order, todo)
-            count += 1
-
-    def _started(self, log, started, order, todo):
-        tag = log["metadata"]["tag"]
-        parent = log["metadata"]["parent"]
-        if started[-1]["metadata"]["tag"] != parent:
-            todo.append(log)
-        else:
-            started.append(log)
-            order.append(log)
-
-    def _working(self, log, started, order, todo):
-        tag = log["metadata"]["tag"]
-        parent = log["metadata"]["parent"]
-        started_tag = started[-1]["metadata"]["tag"]
-        started_parent = started[-1]["metadata"]["parent"]
-        if tag not in (started_tag, started_parent):
-            todo.append(log)
-        else:
-            order.append(log)
-
-    def _default(self, log, started, order, todo):
-        tag = log["metadata"]["tag"]
-        ahead = map(lambda l : l["metadata"]["parent"], todo)
-        if started[-1]["metadata"]["tag"] == tag and tag not in ahead:
-            started.pop()
-            order.append(log)
-        else:
-            todo.append(log)
-
-    def __call__(self, outlet=Stream(Print(Tree()))):
-        self._reload()
-        list(map(outlet, self._order))
+        for o in self._outlets:
+            o(log)

@@ -48,8 +48,8 @@ class Log(Style):
     def _completed(self, log):
         metadata = log["metadata"]
         status = metadata["status"]
-        duration = metadata["stop"] - metadata["start"]
-        timestamp = datetime.datetime.fromtimestamp(log["timestamp"])
+        duration = metadata["timestamps"][-1] - metadata["timestamps"][0]
+        timestamp = datetime.datetime.fromtimestamp(metadata["timestamps"][-1])
         info = ", ".join(map(lambda i: "%s: %s" % i, log["content"].items()))
         message = "{time} {status} {title} after {duration:.3f} seconds"
         if len(info) > 50:
@@ -78,7 +78,7 @@ class Tree(Style):
     def _started(self, log):
         content, metadata = log["content"], log["metadata"]
         indent = "|   " * metadata["depth"]
-        timestamp = datetime.datetime.fromtimestamp(log["timestamp"])
+        timestamp = datetime.datetime.fromtimestamp(metadata["timestamps"][-1])
         yield indent + "|-- {status}: {title}".format(**metadata)
         yield indent + "|   @ {0}".format(timestamp)
         if "reason" in content:
@@ -89,7 +89,7 @@ class Tree(Style):
     def _working(self, log):
         content, metadata = log["content"], log["metadata"]
         indent = "|   " * (metadata["depth"] + 1)
-        timestamp = datetime.datetime.fromtimestamp(log["timestamp"])
+        timestamp = datetime.datetime.fromtimestamp(metadata["timestamps"][-1])
         yield indent + "|-- {status}: {title}".format(**metadata)
         yield indent + "|   @ {0}".format(timestamp)
         if "reason" in content:
@@ -97,26 +97,13 @@ class Tree(Style):
         for k, v in content.items():
             yield indent + "|   | {0}: {1}".format(k, v)
 
-    def _success(self, log):
+    def _default(self, log):
         content, metadata = log["content"], log["metadata"]
         indent = "|   " * (metadata["depth"] + 1)
-        timestamp = datetime.datetime.fromtimestamp(log["timestamp"])
+        timestamp = datetime.datetime.fromtimestamp(metadata["timestamps"][-1])
         yield indent + "`-- {status}: {title}".format(**metadata)
         yield indent + "    @ {0}".format(timestamp)
-        diff = metadata["stop"] - metadata["start"]
-        content["duration"] = "{:.3f}".format(diff) + " seconds"
-        if "reason" in content:
-            yield indent + "|   | reason: {0}".format(content.pop("reason"))
-        for k, v in content.items():
-            yield indent + "    | {0}: {1}".format(k, v)
-
-    def _failure(self, log):
-        content, metadata = log["content"], log["metadata"]
-        indent = "|   " * (metadata["depth"] + 1)
-        timestamp = datetime.datetime.fromtimestamp(log["timestamp"])
-        yield indent + "`-- {status}: {title}".format(**metadata)
-        yield indent + "    @ {0}".format(timestamp)
-        diff = metadata["stop"] - metadata["start"]
+        diff = metadata["timestamps"][-1] - metadata["timestamps"][0]
         content["duration"] = "{:.3f}".format(diff) + " seconds"
         if "reason" in content:
             yield indent + "|   | reason: {0}".format(content.pop("reason"))

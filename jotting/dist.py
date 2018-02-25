@@ -10,6 +10,8 @@ else:
     from Queue import Queue as ThreadQueue
 from threading import Thread, Event as ThreadEvent
 
+from .util import Switch
+
 
 class DistributorMixin(object):
 
@@ -21,11 +23,11 @@ class DistributorMixin(object):
                     " queue that implements %r." % attr)
         self.inbox = inbox
         self.daemon = True
-        self._outlets = []
+        self._outlets = ()
         self._stop = stop
 
     def set_outlets(self, *outlets):
-        self._outlets = list(outlets)
+        self._outlets = outlets
 
     def __call__(self, log):
         if not self.is_alive():

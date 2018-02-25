@@ -6,7 +6,7 @@ import types
 import inspect
 import threading
 import functools
-from uuid import uuid1
+from uuid import uuid4
 from weakref import WeakKeyDictionary
 
 from .util import to_title
@@ -23,8 +23,7 @@ class book(_book_compat):
 
     _shelves = WeakKeyDictionary()
     _distributor = DistributorThread()
-    _distributor.set_outlets(
-        read.Stream(to.Print(style.Tree())))
+    _distributor.set_outlets(to.Print(style.Tree()))
 
     @classmethod
     def distribute(cls, *outlets):
@@ -33,17 +32,18 @@ class book(_book_compat):
     def __init__(self, title, parent=None, **content):
         title = to_title(title, content)
         parent = parent or self.current().get("tag")
-        self._metadata = dict(title=title, tag=uuid1().hex,
-            parent=parent or self.current().get("tag"))
         self._opening = content
         self._conclusion = {}
+        self._metadata = {
+            "title": title,
+            "timestamps": (),
+            "tag": uuid4().hex,
+            "parent": parent or self.current().get("tag"),
+        }
 
     def __enter__(self):
         self.shelf().append(self)
-        self._metadata.update(
-            start=time.time(),
-            status="started"
-        )
+        self._metadata["status"] = "started"
         self._write(self._opening)
         self._metadata["status"] = "working"
         return self
@@ -52,10 +52,10 @@ class book(_book_compat):
         self._metadata["stop"] = time.time()
         if exc[0] is not None:
             etype = exc[0].__name__
-            self._metadata.update(status="failure")
+            self._metadata["status"] = "failure"
             self._conclusion[etype] = str(exc[1])
         else:
-            self._metadata.update(status="success")
+            self._metadata["status"] = "success"
         self._write(self._conclusion)
         self.shelf().pop()
         return False
@@ -79,6 +79,10 @@ class book(_book_compat):
         return self._metadata['tag']
 
     @property
+    def status(self):
+        return self._metadata["status"]
+
+    @property
     def metadata(self):
         return self._metadata.copy()
 
@@ -96,12 +100,8 @@ class book(_book_compat):
         cls.current()._conclusion.update(content)
 
     def _write(self, content):
-        log = {
-            "metadata": self.metadata,
-            "content": content,
-            "timestamp": time.time(),
-        }
-        self._distributor(log)
+        self._metadata["timestamps"] += (time.time(),)
+        self._distributor({"metadata": self.metadata, "content": content})
 
     @classmethod
     def current(cls):

@@ -197,12 +197,12 @@ We've covered a lot of use cases, but we can go even further. In the real world
 we aren't working with single threads, processes, or machines. Modern systems
 are asynchronous and distributed. Following the causes and effects within these
 systems quickly becomes impossible. However with `jotting`, it's possible to
-begin a `book` using the `tag` of a parent task that triggered it:
-
-*Note that threads are supported without the need to pass a `tag`*
+begin a `book` using the `tag` of a parent task that triggered it. In this way
+the logs can be linked across any context.
 
 ```python
 import sys
+import time
 if sys.version_info < (3, 0):
     from Queue import Queue
 else:
@@ -210,49 +210,73 @@ else:
 import threading, requests
 from jotting import book, to, read
 
-book.distribute(to.File(path="~/Desktop/logbox.txt"))
+logbox = "~/Desktop/logbox.txt"
+book.distribute(to.File(path=logbox))
+
+import os
+with open(os.path.expanduser(logbox), "w+"):
+    pass
 
 
 def get(queue, url):
-    queue.put(requests.get(url).status_code)
+    """Get the URL and queue the response."""
+    try:
+        response = requests.get(url)
+    except Exception as e:
+        queue.put(e)
+    else:
+        queue.put(response.status_code)
 
 
 @book.mark
-def schedule(function, *args):
+def distribute(function, *args):
+    """Create a thread for each mapping of the function to args."""
     q = Queue()
     for x in args:
         title = "%s(%r)" % (function.__name__, x)
+        # we provide the tag of the last book here.
         mark = book.mark(title, book.current().tag)
         threading.Thread(target=mark(function), args=(q, x)).start()
+        book.write(scheduled=title)
     return [q.get(timeout=5) for i in range(len(args))]
 
 
-schedule(get, "https://google.com", "https://wikipedia.org")
+responses = distribute(get, "https://google.com", "https://wikipedia.org")
+
+time.sleep(0.1) # give time for logs to flush
+
+read.Complete(logbox)
 ```
 
 ```
-|-- started: __main__.schedule
-|   @ 2018-02-23 14:56:49.190212
-|   | function: <function get at 0x10f1e5ae8>
+|-- started: __main__.distribute
+|   @ 2018-02-25 01:02:03.253594
+|   | function: <function get at 0x112206950>
 |   | args: ['https://google.com', 'https://wikipedia.org']
 |   |-- started: get('https://google.com')
-|   |   @ 2018-02-23 14:56:49.191288
-|   |   | queue: <queue.Queue object at 0x10fab8e80>
+|   |   @ 2018-02-25 01:02:03.254560
+|   |   | queue: <queue.Queue object at 0x1122ac7b8>
 |   |   | url: https://google.com
 |   |   `-- success: get('https://google.com')
-|   |       @ 2018-02-23 14:56:49.518117
+|   |       @ 2018-02-25 01:02:03.657742
 |   |       | returned: None
-|   |       | duration: 0.327 seconds
+|   |       | duration: 0.403 seconds
+|   |-- working: __main__.distribute
+|   |   @ 2018-02-25 01:02:03.256822
+|   |   | scheduled: get('https://google.com')
 |   |-- started: get('https://wikipedia.org')
-|   |   @ 2018-02-23 14:56:49.192486
-|   |   | queue: <queue.Queue object at 0x10fab8e80>
+|   |   @ 2018-02-25 01:02:03.259389
+|   |   | queue: <queue.Queue object at 0x1122ac7b8>
 |   |   | url: https://wikipedia.org
 |   |   `-- success: get('https://wikipedia.org')
-|   |       @ 2018-02-23 14:56:49.412165
+|   |       @ 2018-02-25 01:02:03.468383
 |   |       | returned: None
-|   |       | duration: 0.220 seconds
-|   `-- success: __main__.schedule
-|       @ 2018-02-23 14:56:49.518363
+|   |       | duration: 0.209 seconds
+|   |-- working: __main__.distribute
+|   |   @ 2018-02-25 01:02:03.260952
+|   |   | scheduled: get('https://wikipedia.org')
+|   `-- success: __main__.distribute
+|       @ 2018-02-25 01:02:03.657878
 |       | returned: [200, 200]
-|       | duration: 0.328 seconds
+|       | duration: 0.404 seconds
 ```
