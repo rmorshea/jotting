@@ -15,14 +15,8 @@ class Outlet(object):
         self._style = style
         self._args = args
         self._kwargs = kwargs
-        self._depths = {}
 
     def __call__(self, log):
-        tag = log["metadata"]["tag"]
-        parent = log["metadata"]["parent"]
-        depth = self._depths.get(parent, -1) + 1
-        log["metadata"]["depth"] = self._depths[tag] = depth
-
         if self._style is not None:
             log = self._style(log)
         if log is not None:

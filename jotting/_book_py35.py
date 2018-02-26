@@ -16,7 +16,7 @@ class _book_compat(object):
             task = None
         task = task or threading.current_thread()
         if task not in cls._shelves:
-            cls._shelves[task] = [{"title": "__main__"}]
+            cls._shelves[task] = [None]
         return cls._shelves[task]
 
     @classmethod
@@ -32,6 +32,15 @@ class _book_compat(object):
                         result = await function(*args, **kwargs)
                         cls.close({"returned": result})
                         return result
+            elif inspect.isgeneratorfunction(function):
+                @functools.wraps(function)
+                def author(*args, **kwargs):
+                    book = kwargs.pop("__book__", None)
+                    intro = dict(content, **cm.map(args, kwargs))
+                    with book or cls(title or function, *binding, **intro):
+                        result = function(*args, **kwargs)
+                        cls.close({"returned": result})
+                        yield from result
             else:
                 @functools.wraps(function)
                 def author(*args, **kwargs):

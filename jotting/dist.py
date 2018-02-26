@@ -25,13 +25,12 @@ class DistributorMixin(object):
         self.daemon = True
         self._outlets = ()
         self._stop = stop
+        self.start()
 
     def set_outlets(self, *outlets):
         self._outlets = outlets
 
     def __call__(self, log):
-        if not self.is_alive():
-            self.start()
         self.inbox.put(log)
 
     def deadline(self, timeout):

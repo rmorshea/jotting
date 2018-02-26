@@ -22,24 +22,74 @@ else:
 class book(_book_compat):
 
     _shelves = WeakKeyDictionary()
-    _distributor = DistributorThread()
-    _distributor.set_outlets(to.Print(style.Tree()))
-
-    @classmethod
-    def distribute(cls, *outlets):
-        cls._distributor.set_outlets(*outlets)
+    _distributor_type = DistributorThread
+    _distributor_inst = DistributorThread()
 
     def __init__(self, title, parent=None, **content):
         title = to_title(title, content)
-        parent = parent or self.current().get("tag")
+        parent = parent or self.current("tag")
         self._opening = content
         self._conclusion = {}
         self._metadata = {
             "title": title,
             "timestamps": (),
             "tag": uuid4().hex,
-            "parent": parent or self.current().get("tag"),
+            "parent": parent,
         }
+
+    @classmethod
+    def distribute(cls, *outlets):
+        cls._distributor_inst.set_outlets(*outlets)
+
+    @property
+    def tag(self):
+        return self._metadata['tag']
+
+    @property
+    def status(self):
+        return self._metadata["status"]
+
+    @property
+    def metadata(self):
+        return self._metadata.copy()
+
+    def get(self, key, default=None):
+        return self._metadata.get(key, default)
+
+    @classmethod
+    def write(cls, *args, **kwargs):
+        content = dict(*args, **kwargs)
+        cls.current()._write(content)
+
+    @classmethod
+    def close(cls, *args, **kwargs):
+        content = dict(*args, **kwargs)
+        cls.current()._conclusion.update(content)
+
+    @classmethod
+    def current(cls, data=None):
+        now = cls.shelf()[-1]
+        if data is None:
+            return now
+        elif now is not None:
+            return now._metadata.get(data)
+
+    @classmethod
+    def outlets(cls):
+        return cls._distributor_inst._outlets
+
+    def _write(self, content):
+        self._metadata["timestamps"] += (time.time(),)
+        self._distributor({"metadata": self.metadata, "content": content})
+
+    @property
+    def _distributor(self):
+        if not self._distributor_inst.is_alive():
+            # restart the distributor daemon
+            new = self._distributor_type()
+            new.set_outlets(*self.outlets())
+            type(self)._distributor_inst = new
+        return self._distributor_inst
 
     def __enter__(self):
         self.shelf().append(self)
@@ -73,36 +123,3 @@ class book(_book_compat):
         name = type(self).__name__
         data = map(lambda i: "%s=%s" % i, self._metadata.items())
         return "%s(%s)" % (name, ", ".join(data))
-
-    @property
-    def tag(self):
-        return self._metadata['tag']
-
-    @property
-    def status(self):
-        return self._metadata["status"]
-
-    @property
-    def metadata(self):
-        return self._metadata.copy()
-
-    def get(self, key, default=None):
-        return self._metadata.get(key, default)
-
-    @classmethod
-    def write(cls, *args, **kwargs):
-        content = dict(*args, **kwargs)
-        cls.current()._write(content)
-
-    @classmethod
-    def close(cls, *args, **kwargs):
-        content = dict(*args, **kwargs)
-        cls.current()._conclusion.update(content)
-
-    def _write(self, content):
-        self._metadata["timestamps"] += (time.time(),)
-        self._distributor({"metadata": self.metadata, "content": content})
-
-    @classmethod
-    def current(cls):
-        return cls.shelf()[-1]

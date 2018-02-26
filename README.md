@@ -194,89 +194,51 @@ Along with a `logbox.txt` file on our desktop with the following contents:
 # Distributed Systems
 
 We've covered a lot of use cases, but we can go even further. In the real world
-we aren't working with single threads, processes, or machines. Modern systems
+we aren't working with single [threads](https://github.com/rmorshea/jotting/blob/master/examples/threads.py), [processes](https://github.com/rmorshea/jotting/blob/master/examples/processes.py), or [services](https://github.com/rmorshea/jotting/blob/master/examples/services.py). Modern systems
 are asynchronous and distributed. Following the causes and effects within these
 systems quickly becomes impossible. However with `jotting`, it's possible to
 begin a `book` using the `tag` of a parent task that triggered it. In this way
-the logs can be linked across any context.
+logs can be linked across any context. We can build a very simple `Flask` app
+to demonstrate how we might link a book between a client and server:
 
 ```python
-import sys
-import time
-if sys.version_info < (3, 0):
-    from Queue import Queue
-else:
-    from queue import Queue
-import threading, requests
-from jotting import book, to, read
+from flask import Flask, jsonify, request
+from jotting import book
+import json
 
-logbox = "~/Desktop/logbox.txt"
-book.distribute(to.File(path=logbox))
+# Server
+# ------
 
-import os
-with open(os.path.expanduser(logbox), "w+"):
-    pass
+app = Flask(__name__)
 
 
-def get(queue, url):
-    """Get the URL and queue the response."""
-    try:
-        response = requests.get(url)
-    except Exception as e:
-        queue.put(e)
-    else:
-        queue.put(response.status_code)
+@app.route("/api/task", methods=["PUT"])
+def task():
+    data = json.loads(request.data)
+    with book('api', data["parent"]):
+        book.close(status=200)
+        return jsonify({"status": 200})
 
 
-@book.mark
-def distribute(function, *args):
-    """Create a thread for each mapping of the function to args."""
-    q = Queue()
-    for x in args:
-        title = "%s(%r)" % (function.__name__, x)
-        # we provide the tag of the last book here.
-        mark = book.mark(title, book.current().tag)
-        threading.Thread(target=mark(function), args=(q, x)).start()
-        book.write(scheduled=title)
-    return [q.get(timeout=5) for i in range(len(args))]
+# Client
+# ------
 
-
-responses = distribute(get, "https://google.com", "https://wikipedia.org")
-
-time.sleep(0.1) # give time for logs to flush
-
-read.Complete(logbox)
+with book('put') as b:
+    route = '/api/task'
+    data = json.dumps({'parent': b.tag})
+    app.test_client().put(route, data=data)
 ```
 
 ```
-|-- started: __main__.distribute
-|   @ 2018-02-25 01:02:03.253594
-|   | function: <function get at 0x112206950>
-|   | args: ['https://google.com', 'https://wikipedia.org']
-|   |-- started: get('https://google.com')
-|   |   @ 2018-02-25 01:02:03.254560
-|   |   | queue: <queue.Queue object at 0x1122ac7b8>
-|   |   | url: https://google.com
-|   |   `-- success: get('https://google.com')
-|   |       @ 2018-02-25 01:02:03.657742
-|   |       | returned: None
-|   |       | duration: 0.403 seconds
-|   |-- working: __main__.distribute
-|   |   @ 2018-02-25 01:02:03.256822
-|   |   | scheduled: get('https://google.com')
-|   |-- started: get('https://wikipedia.org')
-|   |   @ 2018-02-25 01:02:03.259389
-|   |   | queue: <queue.Queue object at 0x1122ac7b8>
-|   |   | url: https://wikipedia.org
-|   |   `-- success: get('https://wikipedia.org')
-|   |       @ 2018-02-25 01:02:03.468383
-|   |       | returned: None
-|   |       | duration: 0.209 seconds
-|   |-- working: __main__.distribute
-|   |   @ 2018-02-25 01:02:03.260952
-|   |   | scheduled: get('https://wikipedia.org')
-|   `-- success: __main__.distribute
-|       @ 2018-02-25 01:02:03.657878
-|       | returned: [200, 200]
-|       | duration: 0.404 seconds
+|-- started: get
+|   @ 2018-02-25 18:22:45.912632
+|   |-- started: api
+|   |   @ 2018-02-25 18:22:45.922958
+|   |   `-- success: api
+|   |       @ 2018-02-25 18:22:45.923105
+|   |       | status: 200
+|   |       | duration: 0.000 seconds
+|   `-- success: get
+|       @ 2018-02-25 18:22:45.928721
+|       | duration: 0.016 seconds
 ```

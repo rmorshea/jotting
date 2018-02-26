@@ -7,6 +7,9 @@ from .util import Switch
 
 class Style(Switch):
 
+    def __init__(self):
+        self._depths = {}
+
     def __call__(self, log):
         log = self._pre(log)
         if log:
@@ -19,6 +22,10 @@ class Style(Switch):
                 return self._post("\n".join(lines) + "\n")
 
     def _pre(self, log):
+        tag = log["metadata"]["tag"]
+        parent = log["metadata"]["parent"]
+        depth = self._depths.get(parent, -1) + 1
+        log["metadata"]["depth"] = self._depths[tag] = depth
         return log
 
     def _post(self, log):
@@ -43,7 +50,7 @@ class Log(Style):
 
     def _pre(self, log):
         if isinstance(log["metadata"]["title"], str):
-            return log
+            return super(Log, self)._pre(log)
 
     def _completed(self, log):
         metadata = log["metadata"]
@@ -64,16 +71,6 @@ class Log(Style):
 
 
 class Tree(Style):
-
-    def _pre(self, log):
-        if "depth" not in log["metadata"]:
-            from .read import Stream
-            raise TypeError((
-                "A depth was not added to the log's metadata. "
-                "Try wrapping this style in a buffer like %r "
-                "that will determine a logs depth, and add it to its metadata."
-            ) % Stream)
-        return log
 
     def _started(self, log):
         content, metadata = log["content"], log["metadata"]
