@@ -30,7 +30,7 @@ class _book_compat(object):
                     intro = dict(content, **cm.map(args, kwargs))
                     with book or cls(title or function, *binding, **intro):
                         result = await function(*args, **kwargs)
-                        cls.close({"returned": result})
+                        cls.conclude({"returned": result})
                         return result
             elif inspect.isgeneratorfunction(function):
                 @functools.wraps(function)
@@ -39,7 +39,7 @@ class _book_compat(object):
                     intro = dict(content, **cm.map(args, kwargs))
                     with book or cls(title or function, *binding, **intro):
                         result = function(*args, **kwargs)
-                        cls.close({"returned": result})
+                        cls.conclude({"returned": result})
                         yield from result
             else:
                 @functools.wraps(function)
@@ -48,7 +48,7 @@ class _book_compat(object):
                     intro = dict(content, **cm.map(args, kwargs))
                     with book or cls(title or function, *binding, **intro):
                         result = function(*args, **kwargs)
-                        cls.close({"returned": result})
+                        cls.conclude({"returned": result})
                         return result
             return author
         if callable(title):

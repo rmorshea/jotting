@@ -28,12 +28,15 @@ class DistributorMixin(object):
         self.start()
 
     def set_outlets(self, *outlets):
+        """Set which callable outlets will recieve logged messages."""
         self._outlets = outlets
 
-    def __call__(self, log):
+    def send(self, log):
+        """Send a picklable message to outlets."""
         self.inbox.put(log)
 
     def deadline(self, timeout):
+        """Give the distributor time to flush logs before stopping."""
         start = now()
         while not self.inbox.empty():
             if not self.is_alive():
@@ -43,19 +46,21 @@ class DistributorMixin(object):
                 break
 
     def stop(self):
+        """Stop the distributor without flushing logs"""
         self._stop.set()
 
     def run(self):
         while not self._stop.is_set():
             log = self.inbox.get()
             try:
-                self.send(log)
+                self._send(log)
             except:
                 raise
             finally:
                 self.inbox.task_done()
 
-    def send(self, log):
+    def _send(self, log):
+        """Call outlets with the given log message."""
         for o in self._outlets:
             o(log)
 

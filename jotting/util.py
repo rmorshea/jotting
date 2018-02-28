@@ -15,6 +15,7 @@ else:
 
 
 def to_title(x, inputs):
+    """Infer a title from a given string, function, or class."""
     if isinstance(x, str):
         title = x.format(**inputs)
     else:
@@ -30,7 +31,7 @@ def to_title(x, inputs):
 
 
 def enclosed(x):
-    """Return a function that was decorated by another."""
+    """Return a function or class that was decorated by a function."""
     if inspect.isclass(x):
         return x
     elif isinstance(x, types.MethodType):
@@ -59,6 +60,7 @@ def enclosed(x):
 
 
 class CallMap(object):
+    """Map partial, or complete args and kwargs onto a function's signature."""
 
     def __init__(self, function):
         self.parameters = dict(signature(function).parameters)
@@ -101,11 +103,12 @@ class CallMap(object):
 
 
 class Switch(object):
+    """Sends logs to functions based on status."""
 
     def _switch(self, log, *args, **kwargs):
         status = log["metadata"]["status"]
         method = getattr(self, "_" + status, None) or self._default
         return method(log, *args, **kwargs)
 
-    def default(self, *args, **kwargs):
+    def _default(self, *args, **kwargs):
         pass

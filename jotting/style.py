@@ -6,6 +6,7 @@ from .util import Switch
 
 
 class Style(Switch):
+    """The base style type."""
 
     def __init__(self):
         self._depths = {}
@@ -16,8 +17,6 @@ class Style(Switch):
             lines = self._switch(log)
             if lines and isinstance(lines, str):
                 lines = [lines]
-            else:
-                lines = list(lines)
             if lines:
                 return self._post("\n".join(lines) + "\n")
 
@@ -33,6 +32,7 @@ class Style(Switch):
 
 
 class Raw(Style):
+    """Creates a string representation of the log object."""
 
     class Encoder(json.JSONEncoder):
 
@@ -47,6 +47,7 @@ class Raw(Style):
 
 
 class Log(Style):
+    """A basic formater that only creates successes, and failures."""
 
     def _pre(self, log):
         if isinstance(log["metadata"]["title"], str):
@@ -71,6 +72,7 @@ class Log(Style):
 
 
 class Tree(Style):
+    """An ascii tree representation for logs."""
 
     def _started(self, log):
         content, metadata = log["content"], log["metadata"]

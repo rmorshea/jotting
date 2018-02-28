@@ -7,6 +7,7 @@ from .util import Switch
 class Complete(object):
 
     def __init__(self, source):
+        """Read a complete set of logs from a file or list of dictionaries."""
         if isinstance(source, str):
             path = os.path.realpath(os.path.expanduser(source))
             with open(path, "r") as f:
@@ -52,12 +53,32 @@ class Complete(object):
 
 
 class Stream(Switch):
+    """Read a stream of log strings or dictionaries.
+
+    The stream attempts to make educated guesses about causes and effects.
+    In other words, it will attempt to reorder the logs. This works well for
+    logs that were synchronously created.
+
+    For logs created in parrallel threads or processes, you should store your
+    logs in a file, and read them back with :class:`jotting.read.Complete`.
+    """
 
     def __init__(self, *outlets):
+        """Read a stream of log strings or dictionaries.
+
+        Parameters
+        ----------
+        *outlets : callable
+            A series of callable outlets that will receive logs one at a time.
+            Logs will be collected and then distributed in batches, in order to
+            make guesses about causes and effects. This only works for logs that
+            were created synchronously.
+        """
         self._hold = [] # all the logs up to that point
         self._outlets = outlets
 
     def __call__(self, log):
+        """Add a log to the stream."""
         if isinstance(log, str):
             log = json.loads(log)
         self._switch(log)

@@ -25,7 +25,7 @@ class _book_compat(object):
                     intro = dict(content, **cm.map(args, kwargs))
                     with book or cls(title or function, *binding, **intro):
                         result = function(*args, **kwargs)
-                        cls.close({"returned": result})
+                        cls.conclude({"returned": result})
                         for x in result:
                             yield x
             else:
@@ -35,7 +35,7 @@ class _book_compat(object):
                     intro = dict(content, **cm.map(args, kwargs))
                     with book or cls(title or function, *binding, **intro):
                         result = function(*args, **kwargs)
-                        cls.close({"returned": result})
+                        cls.conclude({"returned": result})
                         return result
             return author
         if callable(title):

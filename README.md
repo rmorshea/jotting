@@ -216,7 +216,7 @@ app = Flask(__name__)
 def task():
     data = json.loads(request.data)
     with book('api', data["parent"]):
-        book.close(status=200)
+        book.conclude(status=200)
         return jsonify({"status": 200})
 
 

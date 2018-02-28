@@ -26,6 +26,23 @@ class book(_book_compat):
     _distributor_inst = DistributorThread()
 
     def __init__(self, title, parent=None, **content):
+        """Create a new book for logging.
+
+        Parameters
+        ----------
+        title : string, function, or class
+            A string representing the title of the book. For functions and
+            classes, a title is infered from its title, and module. Inference
+            attempt to drill down into closures to determin the root function,
+            or class. This typically happens when a function or class has many
+            decorators.
+        parent : string or None
+            The tag of the last book. If ``None`` then the last book within the
+            current thread is used. To link across threads or processes, you must
+            manually communicate this.
+        **content : any
+            A dictionary of content that will be logged when the book is opened.
+        """
         title = to_title(title, content)
         parent = parent or self.current("tag")
         self._opening = content
@@ -39,35 +56,55 @@ class book(_book_compat):
 
     @classmethod
     def distribute(cls, *outlets):
+        """Set which :class:`jotting.to.Outlet` objects recieve logs."""
         cls._distributor_inst.set_outlets(*outlets)
 
     @property
     def tag(self):
+        """Get this book's tag."""
         return self._metadata['tag']
 
     @property
     def status(self):
+        """Get this book's tag.
+
+        Returns
+        -------
+        'started', 'working', 'success', or 'failure'.
+        """
         return self._metadata["status"]
 
     @property
     def metadata(self):
+        """Get a copy of this book's metadata."""
         return self._metadata.copy()
-
-    def get(self, key, default=None):
-        return self._metadata.get(key, default)
 
     @classmethod
     def write(cls, *args, **kwargs):
+        """Write a log to the currently open book."""
         content = dict(*args, **kwargs)
         cls.current()._write(content)
 
     @classmethod
-    def close(cls, *args, **kwargs):
+    def conclude(cls, *args, **kwargs):
+        """Write the content that will be logged when the book closes."""
         content = dict(*args, **kwargs)
         cls.current()._conclusion.update(content)
 
     @classmethod
     def current(cls, data=None):
+        """Get the current book, or metadata from the current book.
+
+        Parameters
+        ----------
+        data : string or None
+            A string indicating a desired piece of metadata from the current
+            book. If ``None``, then the current book is returned instead.
+
+        Returns
+        -------
+        The current book, or an entry in its metadata.
+        """
         now = cls.shelf()[-1]
         if data is None:
             return now
@@ -76,20 +113,35 @@ class book(_book_compat):
 
     @classmethod
     def outlets(cls):
+        """Get the outlets for all books."""
         return cls._distributor_inst._outlets
 
     def _write(self, content):
+        """Send a message with the given content to the distributor."""
         self._metadata["timestamps"] += (time.time(),)
-        self._distributor({"metadata": self.metadata, "content": content})
+        msg = {"metadata": self._metadata.copy(), "content": content}
+        self._distribute(msg)
 
-    @property
-    def _distributor(self):
-        if not self._distributor_inst.is_alive():
+    @classmethod
+    def _distribute(cls, msg):
+        """Pushes a message to the distributor.
+
+        If the distributor has died, a new one is created in its place. This
+        usually happens when a new process is started, and the old reference
+        is marked as dead.
+
+        Parameters
+        ----------
+        msg : dictionary
+            An pickleable dictionary containing data that the distributor's
+            outlets know how to handle and format.
+        """
+        if not cls._distributor_inst.is_alive():
             # restart the distributor daemon
-            new = self._distributor_type()
-            new.set_outlets(*self.outlets())
-            type(self)._distributor_inst = new
-        return self._distributor_inst
+            new = cls._distributor_type()
+            new.set_outlets(*cls.outlets())
+            type(cls)._distributor_inst = new
+        return cls._distributor_inst.send(msg)
 
     def __enter__(self):
         self.shelf().append(self)

@@ -6,7 +6,9 @@ from .style import Raw
 
 def outlet(handler):
     method = staticmethod(handler)
-    return type(handler.__name__, (Outlet,), {"_handler": method})
+    cls = type(handler.__name__, (Outlet,), {"_handler": method})
+    setattr(cls, "__doc__", getattr(handler, "__doc__", None))
+    return cls
 
 
 class Outlet(object):
@@ -28,6 +30,13 @@ class Outlet(object):
 
 @outlet
 def File(log, path):
+    """Send logs to a file.
+
+    Parameters
+    ----------
+    path : string
+        The place you'd like your logs to reside.
+    """
     path = os.path.realpath(os.path.expanduser(path))
     with open(path, "a+") as f:
         f.write(log)
@@ -35,5 +44,6 @@ def File(log, path):
 
 @outlet
 def Print(log):
+    """Send logs to ``sys.stdout``"""
     sys.stdout.write(log)
     sys.stdout.flush()
