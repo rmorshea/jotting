@@ -1,3 +1,9 @@
+"""
+====
+Read
+====
+"""
+
 import os
 import json
 from .style import Tree
@@ -5,9 +11,22 @@ from .util import Switch
 
 
 class Complete(object):
+    """Read a complete set of logs from a file or list of dictionaries.
+
+    This class will reorder a given set of logs such that they are contextually,
+    but not chronologically ordered. You can get a string representation of the
+    given logs styled as a :class:`jotting.style.Tree` simply by converting it
+    to a string (e.g. ``str(Complete(my_source))``), or iterate over the
+    reordered logs (e.g. ``list(Complete(my_source))``).
+
+    Parameters
+    ----------
+    source : string or iterable containing log strings
+        If given as a string ``source`` will be interpreted as a filepath.
+        Otherwise source should it should be a list of log strings.
+    """
 
     def __init__(self, source):
-        """Read a complete set of logs from a file or list of dictionaries."""
         if isinstance(source, str):
             path = os.path.realpath(os.path.expanduser(source))
             with open(path, "r") as f:
@@ -61,19 +80,17 @@ class Stream(Switch):
 
     For logs created in parrallel threads or processes, you should store your
     logs in a file, and read them back with :class:`jotting.read.Complete`.
+
+    Parameters
+    ----------
+    *outlets : callable
+        A series of callable :class:`Outlet`s that will receive logs one at a
+        time. Logs will be collected and then distributed in batches, in order
+        to make guesses about causes and effects. This only works for logs that
+        were created synchronously.
     """
 
     def __init__(self, *outlets):
-        """Read a stream of log strings or dictionaries.
-
-        Parameters
-        ----------
-        *outlets : callable
-            A series of callable outlets that will receive logs one at a time.
-            Logs will be collected and then distributed in batches, in order to
-            make guesses about causes and effects. This only works for logs that
-            were created synchronously.
-        """
         self._hold = [] # all the logs up to that point
         self._outlets = outlets
 

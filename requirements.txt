@@ -1,0 +1,12 @@
+# -------------
+# Documentation
+# -------------
+
+sphinxcontrib-napoleon
+sphinx_materialdesign_theme
+
+# --------
+# Python 2
+# --------
+
+funcsigs

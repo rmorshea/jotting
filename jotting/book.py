@@ -1,3 +1,9 @@
+"""
+Books
+-----
+
+Jotting uses the :class:`book` class as an interface for logging.
+"""
 import sys
 import os
 import json
@@ -20,29 +26,29 @@ else:
 
 
 class book(_book_compat):
+    """Create a new book for logging.
+
+    Parameters
+    ----------
+    title : string, function, or class
+        A string representing the title of the book. For functions and
+        classes, a title is infered from its title, and module. Inference
+        attempt to drill down into closures to determin the root function,
+        or class. This typically happens when a function or class has many
+        decorators.
+    parent : string or None
+        The tag of the last book. If ``None`` then the last book within the
+        current thread is used. To link across threads or processes, you must
+        manually communicate this.
+    **content : any
+        A dictionary of content that will be logged when the book is opened.
+    """
 
     _shelves = WeakKeyDictionary()
     _distributor_type = DistributorThread
     _distributor_inst = DistributorThread()
 
     def __init__(self, title, parent=None, **content):
-        """Create a new book for logging.
-
-        Parameters
-        ----------
-        title : string, function, or class
-            A string representing the title of the book. For functions and
-            classes, a title is infered from its title, and module. Inference
-            attempt to drill down into closures to determin the root function,
-            or class. This typically happens when a function or class has many
-            decorators.
-        parent : string or None
-            The tag of the last book. If ``None`` then the last book within the
-            current thread is used. To link across threads or processes, you must
-            manually communicate this.
-        **content : any
-            A dictionary of content that will be logged when the book is opened.
-        """
         title = to_title(title, content)
         parent = parent or self.current("tag")
         self._opening = content
@@ -70,7 +76,8 @@ class book(_book_compat):
 
         Returns
         -------
-        'started', 'working', 'success', or 'failure'.
+        string
+            'started', 'working', 'success', or 'failure'.
         """
         return self._metadata["status"]
 
@@ -103,7 +110,8 @@ class book(_book_compat):
 
         Returns
         -------
-        The current book, or an entry in its metadata.
+        :class:`book`
+            The current book, or an entry in its metadata.
         """
         now = cls.shelf()[-1]
         if data is None:

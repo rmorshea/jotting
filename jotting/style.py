@@ -1,3 +1,9 @@
+"""
+=====
+Style
+=====
+"""
+
 import sys
 import json
 import datetime
@@ -6,12 +12,23 @@ from .util import Switch
 
 
 class Style(Switch):
-    """The base style type."""
+    """The base :class:`Style` type.
+
+    This base class will add a ``depth`` key to the metadata attribute
+    of a log so that it can be formated more easily by subclasses.
+    """
 
     def __init__(self):
         self._depths = {}
 
     def __call__(self, log):
+        """Return a formated log.
+
+        Parameters
+        ----------
+        log : dict
+            A log created by
+        """
         log = self._pre(log)
         if log:
             lines = self._switch(log)
