@@ -13,6 +13,5 @@ bugs with minimal boilerplate.
 
     pages/install
     pages/quickstart
-    pages/outlets
     pages/examples
     pages/api

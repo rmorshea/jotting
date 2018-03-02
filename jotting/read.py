@@ -79,7 +79,7 @@ class Stream(Switch):
     logs that were synchronously created.
 
     For logs created in parrallel threads or processes, you should store your
-    logs in a file, and read them back with :class:`jotting.read.Complete`.
+    logs in a file, and read them back with :class:`Complete`.
 
     Parameters
     ----------

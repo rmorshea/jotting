@@ -28,6 +28,10 @@ version = ''
 # The full version, including alpha/beta/rc tags
 release = '0.2.1'
 
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath('..')))
 
 # -- General configuration ---------------------------------------------------
 

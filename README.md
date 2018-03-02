@@ -1,5 +1,7 @@
 # Jotting
 
+[![Documentation Status](https://readthedocs.org/projects/jotting/badge/?version=latest)](http://jotting.readthedocs.io/en/latest/?badge=latest)
+
 Logs that explain when, where, and why things happen.
 
 > Jotting was heavily inspired by [`eliot`](https://eliot.readthedocs.io/).
