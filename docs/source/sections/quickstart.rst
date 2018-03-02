@@ -78,4 +78,51 @@ And now we get an extra log telling us what's going on inside `get_url`:
     |       | returned: <Response [200]>
     |       | duration: 0.879 seconds
 
-In the following section we will see how to save logs to files.
+Putting Things In Context
+-------------------------
+
+But wait! We have scripts or functions that have subtasks we'd like to monitor:
+
+.. code-block:: python
+
+    import requests
+
+    urls = ("https://google.com", "not-here")
+
+    responses = []
+    for u in urls:
+        r = requests.get(u)
+        r.raise_for_status()
+        responses.append(r)
+
+We can use the `book` context to define actions that exist independently of functions:
+
+.. code-block:: python
+
+    import requests
+    from jotting import book
+
+    urls = ("https://google.com", "not-here")
+
+    responses = []
+    for u in urls:
+        with book("getting %s" % u):
+            r = requests.get(u)
+            r.raise_for_status()
+            responses.append(r)
+
+This will produce just the kind of fine grained logs we need:
+
+.. code-block:: text
+
+    |-- started: getting https://google.com
+    |   @ 2018-01-14 17:06:22.016731
+    |   `-- success: getting https://google.com
+    |       @ 2018-01-14 17:06:23.006855
+    |       | duration: 0.990 seconds
+    |-- started: getting not-here
+    |   @ 2018-01-14 17:06:23.007092
+    |   `-- failure: getting not-here
+    |       @ 2018-01-14 17:06:23.007587
+    |       | MissingSchema: Invalid URL 'not-here': No schema supplied. Perhaps you meant http://not-here?
+    |       | duration: 0.001 seconds

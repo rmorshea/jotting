@@ -1,37 +1,30 @@
 Examples
 ========
 
-
-The ``book.mark`` as a `decorator`_:
-
 .. literalinclude :: ../../../examples/decorator.py
     :language: python
-
-Using ``book`` as a `context manager`_:
+    :caption: The ``book.mark`` as a `decorator`_
 
 .. literalinclude :: ../../../examples/contexts.py
     :language: python
-
-Changing where you jot down your logs:
+    :caption: Using ``book`` as a `context manager`_
 
 .. literalinclude :: ../../../examples/outputs.py
     :language: python
-
-A toy example demonstrating how to link logs across the web with `flask`_:
+    :caption: Changing where you jot down your logs
 
 .. literalinclude :: ../../../examples/services.py
     :language: python
-
-Link logs between asynchronous `threads`_:
+    :caption: A toy example showing how to link logs across the web with `flask`_
 
 .. literalinclude :: ../../../examples/threads.py
     :language: python
-
-Link logs between asynchronous `processes`_:
+    :caption: Link logs between asynchronous `threads`_
+    :name: threads_example
 
 .. literalinclude :: ../../../examples/processes.py
     :language: python
-
+    :caption: Link logs between asynchronous `processes`_
 
 .. External Links
 .. ==============

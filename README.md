@@ -189,8 +189,8 @@ Now we will find that we got a print out like this:
 Along with a `logbox.txt` file on our desktop with the following contents:
 
 ```json
-{"metadata": {"tag": "ca5d60ee174111e8b6348c8590280283-0", "depth": 0, "start": 1519243197.023079, "status": "started", "parent": null, "title": "getting https://google.com"}, "content": {"url": "https://google.com"}, "timestamp": 1519243197.023083}
-{"metadata": {"tag": "ca5d60ee174111e8b6348c8590280283-0", "depth": 0, "start": 1519243197.023079, "status": "success", "parent": null, "title": "getting https://google.com", "stop": 1519243197.5876129}, "content": {"returned": "<Response [200]>"}, "timestamp": 1519243197.587616}
+{"metadata": {"title": "getting https://google.com", "timestamps": [1519971599.449055], "tag": "69a6dbbc015a4eacb007b60012034e45", "parent": "https://google.com", "status": "started", "depth": 0}, "content": {"url": "https://google.com"}}
+{"metadata": {"title": "getting https://google.com", "timestamps": [1519971599.449055, 1519971599.898956], "tag": "69a6dbbc015a4eacb007b60012034e45", "parent": "https://google.com", "status": "success", "stop": 1519971599.898953, "depth": 0}, "content": {"returned": "<Response [200]>"}}
 ```
 
 # Distributed Systems

@@ -11,7 +11,9 @@ bugs with minimal boilerplate.
 .. toctree::
     :maxdepth: 1
 
-    pages/install
-    pages/quickstart
-    pages/examples
-    pages/api
+    sections/install
+    sections/quickstart
+    sections/distribution
+    sections/networking
+    sections/examples
+    sections/api
