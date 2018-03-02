@@ -48,7 +48,7 @@ class _book_compat(object):
                 async def author(*args, **kwargs):
                     book = kwargs.pop("__book__", None)
                     intro = dict(content, **cm.map(args, kwargs))
-                    with book or cls(title or function, *args, **intro):
+                    with book or cls(title or function, *binding, **intro):
                         result = await function(*args, **kwargs)
                         cls.conclude({"returned": result})
                         return result
@@ -57,7 +57,7 @@ class _book_compat(object):
                 def author(*args, **kwargs):
                     book = kwargs.pop("__book__", None)
                     intro = dict(content, **cm.map(args, kwargs))
-                    with book or cls(title or function, *args, **intro):
+                    with book or cls(title or function, *binding, **intro):
                         result = function(*args, **kwargs)
                         cls.conclude({"returned": result})
                         yield from result
@@ -66,7 +66,7 @@ class _book_compat(object):
                 def author(*args, **kwargs):
                     book = kwargs.pop("__book__", None)
                     intro = dict(content, **cm.map(args, kwargs))
-                    with book or cls(title or function, *args, **intro):
+                    with book or cls(title or function, *binding, **intro):
                         result = function(*args, **kwargs)
                         cls.conclude({"returned": result})
                         return result
