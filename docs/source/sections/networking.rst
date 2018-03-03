@@ -1,5 +1,5 @@
-Networking
-==========
+Log Networking
+==============
 
 We've covered a lot of use cases, but we can go even further. In the real world
 we aren't working with single `threads`_, `processes`_, or `services`_. Modern
