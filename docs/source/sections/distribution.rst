@@ -1,5 +1,5 @@
-Distribution
-============
+Log Distribution
+================
 
 Under the hood, `jotting` creates json encoded messages that contain the information
 required to reconstruct a history of actions. If we need to reconfigure where and/or
