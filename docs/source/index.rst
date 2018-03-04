@@ -13,7 +13,11 @@ bugs with minimal boilerplate.
 
     sections/install
     sections/quickstart
-    sections/distribution
+    sections/distributing
+    sections/styling
     sections/networking
     sections/examples
     sections/api
+
+.. Links
+.. -----

@@ -1,8 +1,4 @@
 """
-=======
-Jotting
-=======
-
 .. currentmodule:: jotting
 
 .. automodule:: jotting.book

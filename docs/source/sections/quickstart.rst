@@ -1,7 +1,7 @@
 Quickstart
 ==========
 
-We'll start with a function that uses `requests` to return a response from a url:
+We'll begin with a function that uses `requests` to return a response from a url:
 
 .. code-block:: python
 
@@ -16,7 +16,7 @@ We'll start with a function that uses `requests` to return a response from a url
 
     response = get_url("https://google.com")
 
-Then we'll start logging what it does by adding a `book.mark` decorator:
+To log when `get_url` is called, we can add `book.mark` as a `decorator`_:
 
 .. code-block:: python
 
@@ -33,7 +33,7 @@ Then we'll start logging what it does by adding a `book.mark` decorator:
 
     response = get_url("https://google.com")
 
-Once we've done this we'll immediately begin to see printed log statements:
+Once we've done this `get_url` will immediately begin to get print logs:
 
 .. code-block:: text
 
@@ -45,7 +45,7 @@ Once we've done this we'll immediately begin to see printed log statements:
     |       | returned: <Response [200]>
     |       | duration: 0.879 seconds
 
-But if we need more information than this we can also use `book.write`:
+If we want more than what `book.mark` gives us we can also use `book.write`:
 
 .. code-block:: python
 
@@ -95,7 +95,7 @@ But wait! We have scripts or functions that have subtasks we'd like to monitor:
         r.raise_for_status()
         responses.append(r)
 
-We can use the `book` context to define actions that exist independently of functions:
+We can use `book` as a `context manager`_ to log anywhere we'd like:
 
 .. code-block:: python
 
@@ -126,3 +126,9 @@ This will produce just the kind of fine grained logs we need:
     |       @ 2018-01-14 17:06:23.007587
     |       | MissingSchema: Invalid URL 'not-here': No schema supplied. Perhaps you meant http://not-here?
     |       | duration: 0.001 seconds
+
+.. External Links
+.. ==============
+
+.. _decorator: https://realpython.com/blog/python/primer-on-python-decorators/
+.. _context manager: http://book.pythontips.com/en/latest/context_managers.html

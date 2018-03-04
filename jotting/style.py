@@ -1,9 +1,3 @@
-"""
-=====
-Style
-=====
-"""
-
 import sys
 import json
 import datetime
@@ -12,14 +6,7 @@ from .util import Switch
 
 
 class Style(Switch):
-    """The base :class:`Style` type.
-
-    This base class will add a ``depth`` key to the metadata attribute
-    of a log so that it can be formated more easily by subclasses.
-    """
-
-    def __init__(self):
-        self._depths = {}
+    """The base :class:`Style` type."""
 
     def __call__(self, log):
         """Return a formated log.
@@ -38,10 +25,6 @@ class Style(Switch):
                 return self._post("\n".join(lines) + "\n")
 
     def _pre(self, log):
-        tag = log["metadata"]["tag"]
-        parent = log["metadata"]["parent"]
-        depth = self._depths.get(parent, -1) + 1
-        log["metadata"]["depth"] = self._depths[tag] = depth
         return log
 
     def _post(self, log):
@@ -68,7 +51,7 @@ class Log(Style):
 
     def _pre(self, log):
         if isinstance(log["metadata"]["title"], str):
-            return super(Log, self)._pre(log)
+            return log
 
     def _completed(self, log):
         metadata = log["metadata"]
@@ -90,6 +73,16 @@ class Log(Style):
 
 class Tree(Style):
     """An ascii tree representation for logs."""
+
+    def __init__(self):
+        self._depths = {}
+
+    def _pre(self, log):
+        tag = log["metadata"]["tag"]
+        parent = log["metadata"]["parent"]
+        depth = self._depths.get(parent, -1) + 1
+        log["metadata"]["depth"] = self._depths[tag] = depth
+        return log
 
     def _started(self, log):
         content, metadata = log["content"], log["metadata"]

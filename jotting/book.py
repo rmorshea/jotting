@@ -1,9 +1,3 @@
-"""
-Books
------
-
-Jotting uses the :class:`book` class as an interface for logging.
-"""
 import sys
 import os
 import json
@@ -148,7 +142,7 @@ class book(_book_compat):
             # restart the distributor daemon
             new = cls._distributor_type()
             new.set_outlets(*cls.outlets())
-            type(cls)._distributor_inst = new
+            cls._distributor_inst = new
         return cls._distributor_inst.send(msg)
 
     def __enter__(self):

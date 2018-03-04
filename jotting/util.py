@@ -108,7 +108,8 @@ class Switch(object):
     def _switch(self, log, *args, **kwargs):
         status = log["metadata"]["status"]
         method = getattr(self, "_" + status, None) or self._default
-        return method(log, *args, **kwargs)
+        if method is not None:
+            return method(log, *args, **kwargs)
 
     def _default(self, *args, **kwargs):
         pass

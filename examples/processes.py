@@ -2,7 +2,7 @@ import sys
 import time
 import threading, requests
 from jotting import book, to, read
-from multiprocessing import Process, JoinableQueue as Queue
+from multiprocessing import Process, Queue
 
 logbox = "~/Desktop/logbox.txt"
 book.distribute(to.File(path=logbox))
@@ -22,7 +22,7 @@ def get(queue, url, parent):
 
 @book.mark
 def schedule(function, *args):
-    """Create a thread for each mapping of the function to args."""
+    """Create a process for each mapping of the function to args."""
     q = Queue()
     for x in args:
         # we want to resume the current book

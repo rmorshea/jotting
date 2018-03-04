@@ -1,9 +1,3 @@
-"""
-====
-Read
-====
-"""
-
 import os
 import json
 from .style import Tree
@@ -13,11 +7,12 @@ from .util import Switch
 class Complete(object):
     """Read a complete set of logs from a file or list of dictionaries.
 
-    This class will reorder a given set of logs such that they are contextually,
-    but not chronologically ordered. You can get a string representation of the
-    given logs styled as a :class:`jotting.style.Tree` simply by converting it
-    to a string (e.g. ``str(Complete(my_source))``), or iterate over the
-    reordered logs (e.g. ``list(Complete(my_source))``).
+    This class will organize a given set of logs such that they are contextually,
+    but not necessarilly chronologically ordered. You can get a string
+    representation of the given logs styled as a :class:`jotting.style.Tree`
+    simply by converting it to a string (e.g. ``str(Complete(my_source))``), or
+    you can iterate over the reordered logs (e.g. ``list(Complete(my_source))``)
+    and style them yourself later.
 
     Parameters
     ----------
@@ -74,20 +69,22 @@ class Complete(object):
 class Stream(Switch):
     """Read a stream of log strings or dictionaries.
 
+    Parameters
+    ----------
+    *outlets : callable
+        A series of callable :class:`Outlet` objects that will receive logs one
+        at a time. Logs will be collected and then distributed in batches, in
+        order to make guesses about causes and effects. This only works for logs
+        that were created synchronously.
+
+    Notes
+    -----
     The stream attempts to make educated guesses about causes and effects.
     In other words, it will attempt to reorder the logs. This works well for
     logs that were synchronously created.
 
     For logs created in parrallel threads or processes, you should store your
     logs in a file, and read them back with :class:`Complete`.
-
-    Parameters
-    ----------
-    *outlets : callable
-        A series of callable :class:`Outlet`s that will receive logs one at a
-        time. Logs will be collected and then distributed in batches, in order
-        to make guesses about causes and effects. This only works for logs that
-        were created synchronously.
     """
 
     def __init__(self, *outlets):

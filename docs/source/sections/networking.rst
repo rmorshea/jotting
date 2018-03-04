@@ -1,13 +1,13 @@
-Log Networking
-==============
+Networking Logs
+===============
 
-We've covered a lot of use cases, but we can go even further. In the real world
-we aren't working with single `threads`_, `processes`_, or `services`_. Modern
-systems are asynchronous and distributed. Following the causes and effects within
-these systems quickly becomes impossible. However with `jotting`, it's possible
-to begin a `book` using the `tag` of a parent task that triggered it. In this way
-logs can be linked across any context. We can build a very simple `Flask` app
-to demonstrate how we might link a book between a client and server:
+In the real world we aren't working with single `threads`_, `processes`_, or
+`services`_. Modern systems are asynchronous and distributed. Following the
+causes and effects within them quickly becomes impossible. However with
+`jotting`, it's possible to begin a `book` using the `tag` of a parent task
+that triggered it. In this way logs can be linked across any context. We can
+build a very simple `Flask` app to demonstrate how we might link a book between
+a client and server:
 
 .. code-block:: python
 
@@ -24,6 +24,7 @@ to demonstrate how we might link a book between a client and server:
     @app.route("/api/task", methods=["PUT"])
     def task():
         data = json.loads(request.data)
+        # link the tag of a parent book
         with book('api', data["parent"]):
             book.conclude(status=200)
             return jsonify({"status": 200})
@@ -34,6 +35,7 @@ to demonstrate how we might link a book between a client and server:
 
     with book('put') as b:
         route = '/api/task'
+        # hand off the tag of the current book
         data = json.dumps({'parent': b.tag})
         app.test_client().put(route, data=data)
 
