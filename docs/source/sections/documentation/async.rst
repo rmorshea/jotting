@@ -1,5 +1,5 @@
-Networking Logs
-===============
+Async
+=====
 
 In the real world we aren't working with single `threads`_, `processes`_, or
 `services`_. Modern systems are asynchronous and distributed. Following the

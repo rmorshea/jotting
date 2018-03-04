@@ -1,5 +1,5 @@
-Styling Logs
-============
+Styling
+=======
 
 In the last section we saw how to save logs to files, and we also noticed, that
 under the hood, each log message was actually a dictionary of data. Yet we know

@@ -1,5 +1,5 @@
-Distributing Logs
-=================
+Outlets
+=======
 
 We can configure where ``jotting`` sends logs by choosing new "outlets". Outlets
 can be any callable object, but we can also use builtin outlets from ``jotting.to``
